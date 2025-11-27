@@ -1,0 +1,318 @@
+@import "tailwindcss";
+
+@theme {
+  --color-miyazaki-blue: #87CEEB;
+  --color-miyazaki-green: #90EE90;
+  --color-miyazaki-white: #F0F8FF;
+}
+
+/* Custom Font Configuration */
+@font-face {
+  font-family: 'AlimamaDongFangDaKai';
+  src: url('/fonts/AlimamaDongFangDaKai-Regular.woff2') format('woff2'),
+       url('/fonts/AlimamaDongFangDaKai-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* 主要字体：用于 UI 和短文本 */
+  --font-sans: 'Inter', 'Noto Sans SC', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* 阅读字体：用于长篇文章 */
+  --font-serif: 'Source Serif 4', 'Noto Serif SC', Georgia, Cambria, 'Times New Roman', serif;
+  /* 代码字体 */
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, Monaco, 'Courier New', monospace;
+  /* 展示字体：用于标题和品牌 */
+  --font-display: 'AlimamaDongFangDaKai', 'Inter', 'Noto Sans SC', sans-serif;
+  
+  --el-font-family: var(--font-sans) !important;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  background-color: var(--color-miyazaki-white);
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 展示字体：用于品牌和大标题 */
+.font-display {
+  font-family: var(--font-display) !important;
+}
+
+::selection {
+  background-color: rgba(135, 206, 235, 0.3);
+  color: #2c3e50;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #87CEEB;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5fb8d9;
+}
+
+/* Markdown Customization - 优化长篇文章阅读 */
+.prose {
+  max-width: none;
+  color: #334155;
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+  font-feature-settings: 'onum' 1, 'pnum' 1;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  font-family: var(--font-sans);
+  color: #0f172a;
+}
+
+.prose h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-top: 2em;
+  margin-bottom: 0.8em;
+}
+
+.prose h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 2em;
+  margin-bottom: 0.75em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid rgba(148,163,184,0.15);
+}
+
+.prose h3 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 1.6em;
+  margin-bottom: 0.6em;
+}
+
+.prose h4 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+}
+
+.prose p {
+  margin-bottom: 1.5em;
+  color: #374151;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.prose a {
+  color: #0ea5e9;
+  text-decoration: none;
+  background-image: linear-gradient(transparent 90%, rgba(14,165,233,0.25) 90%);
+  transition: all 0.2s ease;
+}
+
+.prose a:hover {
+  color: #0284c7;
+  background-image: linear-gradient(transparent 70%, rgba(14,165,233,0.3) 70%);
+}
+
+.prose strong, .prose b {
+  font-weight: 700 !important;
+  color: #0f172a;
+  font-family: var(--font-sans);
+}
+
+.prose em, .prose i {
+  font-style: italic;
+}
+
+/* 加粗+斜体组合 */
+.prose strong em, .prose em strong,
+.prose b i, .prose i b {
+  font-weight: 700 !important;
+  font-style: italic;
+}
+
+.prose blockquote {
+  border-left: 3px solid #87CEEB;
+  background: linear-gradient(90deg, rgba(135,206,235,0.08), transparent);
+  padding: 1.25rem 1.5rem;
+  border-radius: 0 0.75rem 0.75rem 0;
+  color: #475569;
+  margin: 1.5rem 0;
+  font-style: italic;
+}
+
+.prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* 行内代码 */
+.prose code {
+  font-family: var(--font-mono);
+  color: #be185d;
+  background-color: rgba(244,114,182,0.1);
+  padding: 0.2em 0.45em;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+/* 代码块 */
+.prose pre {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  margin: 1.75rem 0;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.prose pre code {
+  font-family: var(--font-mono);
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  padding: 0;
+  white-space: pre;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* 代码行号效果 */
+.prose pre code .line {
+  display: block;
+}
+
+.prose img {
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  margin: 2.5rem auto;
+  display: block;
+  max-width: 100%;
+}
+
+.prose figure {
+  margin: 2rem 0;
+}
+
+.prose figcaption {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+
+.prose th {
+  background: #f8fafc;
+  font-weight: 600;
+  text-align: left;
+}
+
+.prose th, .prose td {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.prose tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.prose ul, .prose ol {
+  padding-left: 1.5em;
+  margin: 1.25em 0;
+}
+
+.prose li {
+  margin: 0.5em 0;
+  padding-left: 0.25em;
+}
+
+.prose li::marker {
+  color: #87CEEB;
+}
+
+.callout {
+  padding: 0.8rem 1rem;
+  border-radius: 0.6rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.callout.note { background: linear-gradient(90deg, rgba(14,165,233,0.06), transparent); border-left: 3px solid #0ea5e9 }
+.callout.warn { background: linear-gradient(90deg, rgba(250,204,21,0.06), transparent); border-left: 3px solid #f59e0b }
+.callout.success { background: linear-gradient(90deg, rgba(34,197,94,0.06), transparent); border-left: 3px solid #22c55e }
+
+.toc-content a { color: #374151 }
+
+.prose hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(148,163,184,0.06), rgba(148,163,184,0.18));
+  margin: 2rem 0;
+}
+
+/* List Transitions */
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.list-leave-active {
+  position: absolute;
+}
+
+/* Fade Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
