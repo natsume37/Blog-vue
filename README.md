@@ -13,15 +13,15 @@
 
 ## 🛠 技术栈
 
-| 类别 | 技术 |
-|------|------|
-| 框架 | Vue 3 + TypeScript |
-| 构建 | Vite (Rolldown) |
-| 状态管理 | Pinia |
-| 路由 | Vue Router 4 |
-| UI 组件 | Element Plus |
-| 样式 | Tailwind CSS 4 |
-| Markdown | marked |
+| 类别     | 技术               |
+| -------- | ------------------ |
+| 框架     | Vue 3 + TypeScript |
+| 构建     | Vite (Rolldown)    |
+| 状态管理 | Pinia              |
+| 路由     | Vue Router 4       |
+| UI 组件  | Element Plus       |
+| 样式     | Tailwind CSS 4     |
+| Markdown | marked             |
 
 ## 📦 安装
 
@@ -98,7 +98,7 @@ server {
 
     # API 代理（如果后端在同一服务器）
     location /api/ {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://0.0.0.0:8090;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -195,7 +195,7 @@ Blog/
 ## 🔗 相关文档
 
 - [API 文档](./API_DOCS.md) - 后端接口规范
-- [后端部署](./backend/README.md) - FastAPI 后端部署指南
+- [后端部署](https://github.com/natsume37/Blog-backend) - FastAPI 后端部署指南
 
 ## 📄 License
 
