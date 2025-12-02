@@ -1,9 +1,10 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { apiConfig } from '../config'
 
 const service = axios.create({
-  baseURL: 'http://localhost:8000/api/v1',
-  timeout: 10000
+  baseURL: apiConfig.baseURL,
+  timeout: apiConfig.timeout
 })
 
 // Request interceptor

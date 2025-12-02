@@ -48,8 +48,8 @@
       <!-- Comments -->
       <div class="mt-20 pt-12 border-t border-gray-200">
         <h2 class="text-2xl font-bold text-gray-800 mb-8 text-center font-serif">留言互动</h2>
-        <!-- Use a fixed ID for system changelog comments -->
-        <CommentSection :article-id="1" /> 
+        <!-- 使用 changelog 类型，content-id=0 表示整个建站日志页面 -->
+        <CommentSection :content-id="0" content-type="changelog" /> 
       </div>
     </div>
 

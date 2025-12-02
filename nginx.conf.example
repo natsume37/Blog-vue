@@ -1,0 +1,71 @@
+# Nginx 配置示例 - 用于部署 Vue 前端项目
+# 将此文件复制到 /etc/nginx/sites-available/ 或 /etc/nginx/conf.d/
+
+server {
+    listen 80;
+    server_name your-domain.com;  # 替换为你的域名或服务器 IP
+
+    # 前端静态文件目录
+    root /var/www/blog/dist;
+    index index.html;
+
+    # 处理 Vue Router 的 history 模式
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 禁用 HTML 缓存，确保每次都获取最新的 index.html
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+
+    # Gzip 压缩
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml application/json application/javascript application/xml;
+}
+
+# =====================================
+# 重要说明：
+# =====================================
+# 
+# 1. 前端 API 请求说明：
+#    前端代码中 API 基础地址已经硬编码为：http://121.40.127.17:8090/api/v1
+#    这意味着：
+#    - 前端会直接向后端服务器发起跨域请求
+#    - 后端服务器需要配置 CORS（跨域资源共享）允许前端域名访问
+#    - 不需要 Nginx 代理 API 请求
+#
+# 2. 如果你想让 Nginx 代理 API 请求（可选）：
+#    如果你想隐藏后端真实地址，可以添加以下配置，并修改前端的 API 地址为相对路径：
+#
+#    location /api/ {
+#        proxy_pass http://121.40.127.17:8090/api/;
+#        proxy_set_header Host $host;
+#        proxy_set_header X-Real-IP $remote_addr;
+#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#        proxy_set_header X-Forwarded-Proto $scheme;
+#    }
+#
+# 3. 清除浏览器缓存：
+#    部署新版本后，如果浏览器仍然显示旧内容，请：
+#    - 强制刷新页面 (Ctrl + Shift + R 或 Cmd + Shift + R)
+#    - 清除浏览器缓存
+#    - 或者在隐私/无痕模式下测试
+#
+# 4. 确保后端 CORS 配置：
+#    后端需要允许来自前端域名的跨域请求，例如：
+#    Access-Control-Allow-Origin: http://your-domain.com
+#    Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+#    Access-Control-Allow-Headers: Content-Type, Authorization

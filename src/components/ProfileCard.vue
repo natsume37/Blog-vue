@@ -19,21 +19,21 @@
     
     <div class="grid grid-cols-3 gap-2 text-center border-t border-gray-100 pt-5">
       <div class="group/item cursor-pointer">
-        <div class="font-bold text-lg text-gray-800 group-hover/item:text-miyazaki-blue transition-colors">{{ stats.articleCount }}</div>
+        <div class="font-bold text-lg text-gray-800 group-hover/item:text-miyazaki-blue transition-colors">{{ props.stats.articleCount }}</div>
         <div class="text-[15px] text-gray-400 uppercase tracking-wider mt-0.5">文章</div>
       </div>
       <div class="group/item cursor-pointer">
-        <div class="font-bold text-lg text-gray-800 group-hover/item:text-miyazaki-blue transition-colors">{{ stats.tagCount }}</div>
+        <div class="font-bold text-lg text-gray-800 group-hover/item:text-miyazaki-blue transition-colors">{{ props.stats.tagCount }}</div>
         <div class="text-[15px] text-gray-400 uppercase tracking-wider mt-0.5">标签</div>
       </div>
       <div class="group/item cursor-pointer">
-        <div class="font-bold text-lg text-gray-800 group-hover/item:text-miyazaki-blue transition-colors">{{ formatNumber(stats.viewCount) }}</div>
+        <div class="font-bold text-lg text-gray-800 group-hover/item:text-miyazaki-blue transition-colors">{{ formatNumber(props.stats.viewCount) }}</div>
         <div class="text-[15px] text-gray-400 uppercase tracking-wider mt-0.5">访问</div>
       </div>
     </div>
     
     <div class="mt-4 text-[15px] text-gray-400">
-      🚀 已运行 {{ stats.runDays }} 天
+      🚀 已运行 {{ props.stats.runDays }} 天
     </div>
   </div>
 </template>
@@ -58,7 +58,7 @@ const props = withDefaults(defineProps<{
 })
 
 // 暴露 `stats` 给模板使用，避免未使用变量错误并保持模板简洁
-const stats = props.stats
+// const stats = props.stats
 
 // 格式化数字
 const formatNumber = (num: number) => {

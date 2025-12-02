@@ -55,10 +55,13 @@ export const getSystemInfo = () => request.get('/monitor/system')
 export const getRealtimeStats = () => request.get('/monitor/realtime')
 export const getProcesses = (params: any) => request.get('/monitor/processes', { params })
 export const getConnections = () => request.get('/monitor/connections')
+export const getVisitLogs = (params: any) => request.get('/monitor/visits', { params })
+export const getMapStats = () => request.get('/monitor/map-stats')
 
 // Comments
-export const getArticleComments = (articleId: number, params: any) => 
-  request.get(`/comments/article/${articleId}`, { params })
+// contentType: 'article' | 'changelog' | 'message_board'
+export const getComments = (contentType: string, contentId: number, params: any) => 
+  request.get(`/comments/${contentType}/${contentId}`, { params })
 export const createComment = (data: any) => request.post('/comments', data)
 export const deleteComment = (id: number) => request.delete(`/comments/${id}`)
 export const likeComment = (id: number) => request.post(`/comments/${id}/like`)

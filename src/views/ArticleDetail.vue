@@ -143,7 +143,7 @@
             
             <!-- 评论区 -->
             <section class="mt-12 pt-8 border-t border-gray-200">
-              <CommentSection :article-id="article.id" />
+              <CommentSection :content-id="article.id" content-type="article" />
             </section>
          </div>
       </article>

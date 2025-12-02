@@ -6,7 +6,7 @@
       (isTransparentPage && isTop) ? 'bg-gradient-to-b from-black/30 to-transparent border-transparent shadow-none py-4' : 'bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm py-0'
     ]"
   >
-    <div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-20">
+    <div class="w-full mx-auto px-6 sm:px-10 lg:px-16 xl:px-24 2xl:px-32">
       <div class="flex justify-between h-16 items-center">
         <div class="flex-shrink-0 flex items-center cursor-pointer gap-3" @click="$router.push('/')">
           <div class="w-9 h-9 bg-gradient-to-br from-miyazaki-blue to-miyazaki-green rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md transform rotate-3 hover:rotate-0 transition-transform font-display">
@@ -106,7 +106,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare } from '@element-plus/icons-vue'
+import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
 import { useSiteStore } from '../stores/site'
@@ -121,6 +121,7 @@ const navLinks = [
   { name: '首页', path: '/', icon: HomeFilled },
   { name: '分类', path: '/category', icon: Menu },
   { name: '留言板', path: '/message', icon: ChatLineSquare },
+  { name: '建站日志', path: '/changelog', icon: Calendar },
 ]
 
 // 导航栏滚动隐藏逻辑

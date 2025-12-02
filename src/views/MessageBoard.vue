@@ -6,6 +6,137 @@
         <h1 class="text-3xl font-bold text-gray-800 mb-4 font-serif">留言树洞 💬</h1>
         <p class="text-gray-500">在这里留下你的足迹，分享你的想法</p>
       </div>
+
+      <!-- 流动留言墙 -->
+      <div v-if="wallMessages.length > 0" class="message-wall-container mb-12 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-4">
+        <div class="message-wall">
+          <!-- 第一行 - 向左流动 -->
+          <div class="message-row scroll-left">
+            <div class="message-track">
+              <div 
+                v-for="(msg, index) in wallMessagesRow1" 
+                :key="'row1-' + index"
+                class="message-bubble"
+                :style="{ 
+                  '--delay': index * 0.1 + 's',
+                  '--bg': bubbleColors[index % bubbleColors.length]
+                }"
+              >
+                <UserAvatar 
+                  :src="msg.avatar" 
+                  :name="msg.nickname || '游客'"
+                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
+                />
+                <span class="message-name">{{ msg.nickname || '游客' }}</span>
+                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
+              </div>
+            </div>
+            <div class="message-track">
+              <div 
+                v-for="(msg, index) in wallMessagesRow1" 
+                :key="'row1-dup-' + index"
+                class="message-bubble"
+                :style="{ 
+                  '--delay': index * 0.1 + 's',
+                  '--bg': bubbleColors[index % bubbleColors.length]
+                }"
+              >
+                <UserAvatar 
+                  :src="msg.avatar" 
+                  :name="msg.nickname || '游客'"
+                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
+                />
+                <span class="message-name">{{ msg.nickname || '游客' }}</span>
+                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 第二行 - 向右流动 -->
+          <div class="message-row scroll-right">
+            <div class="message-track">
+              <div 
+                v-for="(msg, index) in wallMessagesRow2" 
+                :key="'row2-' + index"
+                class="message-bubble"
+                :style="{ 
+                  '--delay': index * 0.15 + 's',
+                  '--bg': bubbleColors[(index + 3) % bubbleColors.length]
+                }"
+              >
+                <UserAvatar 
+                  :src="msg.avatar" 
+                  :name="msg.nickname || '游客'"
+                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
+                />
+                <span class="message-name">{{ msg.nickname || '游客' }}</span>
+                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
+              </div>
+            </div>
+            <div class="message-track">
+              <div 
+                v-for="(msg, index) in wallMessagesRow2" 
+                :key="'row2-dup-' + index"
+                class="message-bubble"
+                :style="{ 
+                  '--delay': index * 0.15 + 's',
+                  '--bg': bubbleColors[(index + 3) % bubbleColors.length]
+                }"
+              >
+                <UserAvatar 
+                  :src="msg.avatar" 
+                  :name="msg.nickname || '游客'"
+                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
+                />
+                <span class="message-name">{{ msg.nickname || '游客' }}</span>
+                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 第三行 - 向左流动（较慢） -->
+          <div class="message-row scroll-left-slow">
+            <div class="message-track">
+              <div 
+                v-for="(msg, index) in wallMessagesRow3" 
+                :key="'row3-' + index"
+                class="message-bubble"
+                :style="{ 
+                  '--delay': index * 0.12 + 's',
+                  '--bg': bubbleColors[(index + 5) % bubbleColors.length]
+                }"
+              >
+                <UserAvatar 
+                  :src="msg.avatar" 
+                  :name="msg.nickname || '游客'"
+                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
+                />
+                <span class="message-name">{{ msg.nickname || '游客' }}</span>
+                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
+              </div>
+            </div>
+            <div class="message-track">
+              <div 
+                v-for="(msg, index) in wallMessagesRow3" 
+                :key="'row3-dup-' + index"
+                class="message-bubble"
+                :style="{ 
+                  '--delay': index * 0.12 + 's',
+                  '--bg': bubbleColors[(index + 5) % bubbleColors.length]
+                }"
+              >
+                <UserAvatar 
+                  :src="msg.avatar" 
+                  :name="msg.nickname || '游客'"
+                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
+                />
+                <span class="message-name">{{ msg.nickname || '游客' }}</span>
+                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <!-- Message Form -->
       <div class="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 mb-8 border border-white/50">
@@ -113,7 +244,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { User, Message, Promotion, ChatLineSquare } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getMessages, createMessage } from '../api'
@@ -123,6 +254,7 @@ import UserAvatar from '../components/UserAvatar.vue'
 const loading = ref(false)
 const submitting = ref(false)
 const messages = ref<any[]>([])
+const wallMessages = ref<any[]>([])
 
 // 分页
 const currentPage = ref(1)
@@ -135,6 +267,46 @@ const form = reactive({
   email: '',
   content: ''
 })
+
+// 留言墙颜色
+const bubbleColors = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+]
+
+// 将留言分成三行
+const wallMessagesRow1 = computed(() => {
+  const msgs = wallMessages.value
+  return msgs.filter((_, i) => i % 3 === 0)
+})
+
+const wallMessagesRow2 = computed(() => {
+  const msgs = wallMessages.value
+  return msgs.filter((_, i) => i % 3 === 1)
+})
+
+const wallMessagesRow3 = computed(() => {
+  const msgs = wallMessages.value
+  return msgs.filter((_, i) => i % 3 === 2)
+})
+
+// 获取随机头像表情
+// const getAvatarEmoji = (nickname: string) => {
+//   const index = nickname ? nickname.charCodeAt(0) % avatarEmojis.length : Math.floor(Math.random() * avatarEmojis.length)
+//   return avatarEmojis[index]
+// }
+
+// 截断文本
+const truncateText = (text: string, maxLength: number) => {
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
 
 // 格式化时间
 const formatTime = (dateStr: string) => {
@@ -153,6 +325,21 @@ const formatTime = (dateStr: string) => {
   if (days < 7) return `${days} 天前`
   
   return date.toLocaleDateString('zh-CN')
+}
+
+// 获取留言墙数据（获取更多用于展示）
+const fetchWallMessages = async () => {
+  try {
+    const res: any = await getMessages({
+      current: 1,
+      size: 30 // 获取更多数据用于留言墙
+    })
+    if (res.code === 200) {
+      wallMessages.value = res.data.records
+    }
+  } catch (error) {
+    console.error('Failed to fetch wall messages:', error)
+  }
 }
 
 // 获取留言
@@ -195,6 +382,7 @@ const handleSubmit = async () => {
       // 刷新列表
       currentPage.value = 1
       fetchMessages()
+      fetchWallMessages() // 同时刷新留言墙
     } else {
       ElMessage.error(res.msg || '留言失败')
     }
@@ -209,8 +397,172 @@ const handleSubmit = async () => {
 // 初始化
 onMounted(() => {
   fetchMessages()
+  fetchWallMessages()
 })
 </script>
 
 <style scoped>
+/* 留言墙容器 */
+.message-wall-container {
+  position: relative;
+}
+
+.message-wall-container::before,
+.message-wall-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.message-wall-container::before {
+  left: 0;
+  background: linear-gradient(to right, rgb(239 246 255 / 0.9), transparent);
+}
+
+.message-wall-container::after {
+  right: 0;
+  background: linear-gradient(to left, rgb(240 253 244 / 0.9), transparent);
+}
+
+.message-wall {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-row {
+  display: flex;
+  width: max-content;
+}
+
+.message-track {
+  display: flex;
+  gap: 16px;
+  padding: 4px 8px;
+}
+
+/* 向左滚动 */
+.scroll-left {
+  animation: scrollLeft 40s linear infinite;
+}
+
+.scroll-left:hover {
+  animation-play-state: paused;
+}
+
+/* 向右滚动 */
+.scroll-right {
+  animation: scrollRight 45s linear infinite;
+}
+
+.scroll-right:hover {
+  animation-play-state: paused;
+}
+
+/* 向左滚动（较慢） */
+.scroll-left-slow {
+  animation: scrollLeft 55s linear infinite;
+}
+
+.scroll-left-slow:hover {
+  animation-play-state: paused;
+}
+
+@keyframes scrollLeft {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scrollRight {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* 留言气泡 */
+.message-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg);
+  border-radius: 24px;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: default;
+  animation: fadeIn 0.5s ease var(--delay) both;
+}
+
+.message-bubble:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.message-avatar {
+  font-size: 18px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.message-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message-text {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 响应式 */
+@media (max-width: 640px) {
+  .message-bubble {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+  
+  .message-avatar {
+    font-size: 14px;
+  }
+  
+  .message-name {
+    font-size: 11px;
+  }
+  
+  .message-text {
+    font-size: 12px;
+    max-width: 120px;
+  }
+  
+  .message-wall-container::before,
+  .message-wall-container::after {
+    width: 30px;
+  }
+}
 </style>

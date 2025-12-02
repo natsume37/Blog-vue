@@ -232,10 +232,13 @@ import * as api from '../api'
 import UserAvatar from './UserAvatar.vue'
 
 interface Props {
-  articleId: number
+  contentId: number
+  contentType?: 'article' | 'changelog' | 'message_board'
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  contentType: 'article'
+})
 const userStore = useUserStore()
 
 // 状态
@@ -264,7 +267,7 @@ const fetchComments = async (page = 1, append = false) => {
   }
   
   try {
-    const res: any = await api.getArticleComments(props.articleId, {
+    const res: any = await api.getComments(props.contentType, props.contentId, {
       current: page,
       size: pageSize
     })
@@ -302,7 +305,8 @@ const submitComment = async () => {
   submitting.value = true
   try {
     const data: any = {
-      article_id: props.articleId,
+      content_type: props.contentType,
+      content_id: props.contentId,
       content: newComment.value.trim()
     }
     
@@ -458,15 +462,15 @@ const formatTime = (dateStr: string) => {
   return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
-// 监听文章ID变化
-watch(() => props.articleId, (newId) => {
+// 监听内容ID变化
+watch(() => props.contentId, (newId) => {
   if (newId) {
     fetchComments(1)
   }
 }, { immediate: true })
 
 onMounted(() => {
-  if (props.articleId) {
+  if (props.contentId) {
     fetchComments(1)
   }
 })

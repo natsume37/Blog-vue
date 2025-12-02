@@ -40,6 +40,12 @@
           <el-icon><Monitor /></el-icon> 服务器监控
         </router-link>
 
+        <router-link to="/admin/visits" 
+          class="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-miyazaki-blue transition-colors"
+          active-class="bg-blue-50 text-miyazaki-blue font-medium">
+          <el-icon><DataLine /></el-icon> 访问记录
+        </router-link>
+
         <router-link to="/admin/settings" 
           class="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-miyazaki-blue transition-colors"
           active-class="bg-blue-50 text-miyazaki-blue font-medium">
@@ -92,7 +98,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { Management, Document, Collection, HomeFilled, SwitchButton, User, Monitor, ChatDotSquare, Setting, Timer } from '@element-plus/icons-vue'
+import { Management, Document, Collection, HomeFilled, SwitchButton, User, Monitor, ChatDotSquare, Setting, Timer, DataLine } from '@element-plus/icons-vue'
 import { useUserStore } from '../../stores/user'
 import { ElMessage } from 'element-plus'
 import UserAvatar from '../../components/UserAvatar.vue'
