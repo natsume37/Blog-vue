@@ -58,7 +58,7 @@
                   <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
                   Remember me
                 </label>
-                <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Forgot password?</a>
+                <router-link to="/forgot-password" class="text-blue-600 hover:text-blue-700 font-medium">Forgot password?</router-link>
               </div>
 
               <button type="submit" :disabled="loading" class="w-full py-3.5 bg-gray-900 hover:bg-black text-white rounded-xl font-medium text-sm shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50">
@@ -76,9 +76,23 @@
               </div>
               <div class="space-y-1">
                 <label class="text-xs font-medium text-gray-500 ml-1">Email</label>
-                <input type="email" required v-model="registerForm.email"
+                <div class="flex gap-2">
+                  <input type="email" required v-model="registerForm.email"
+                         class="flex-1 px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
+                         placeholder="name@example.com" />
+                  <button type="button" 
+                          @click="sendCode" 
+                          :disabled="codeLoading || codeTimer > 0"
+                          class="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                    {{ codeTimer > 0 ? `${codeTimer}s` : 'Send Code' }}
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-500 ml-1">Verification Code</label>
+                <input type="text" required v-model="registerForm.code" maxlength="6"
                        class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
-                       placeholder="name@example.com" />
+                       placeholder="Enter 6-digit code" />
               </div>
               <div class="space-y-1">
                 <label class="text-xs font-medium text-gray-500 ml-1">Password</label>
@@ -125,6 +139,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
+import * as api from '../api'
 
 const router = useRouter()
 const route = useRoute()
@@ -132,6 +147,8 @@ const userStore = useUserStore()
 
 const isLogin = ref(true)
 const loading = ref(false)
+const codeLoading = ref(false)
+const codeTimer = ref(0)
 
 const loginForm = ref({
   username: '',
@@ -141,8 +158,47 @@ const loginForm = ref({
 const registerForm = ref({
   username: '',
   email: '',
-  password: ''
+  password: '',
+  code: ''
 })
+
+const sendCode = async () => {
+  if (!registerForm.value.email) {
+    ElMessage.warning('Please enter your email address')
+    return
+  }
+  // Simple email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(registerForm.value.email)) {
+    ElMessage.warning('Please enter a valid email address')
+    return
+  }
+
+  codeLoading.value = true
+  try {
+    const res: any = await api.sendRegisterCode({ email: registerForm.value.email })
+    if (res.code === 200) {
+      ElMessage.success('Verification code sent')
+      startTimer()
+    } else {
+      ElMessage.error(res.msg || 'Failed to send code')
+    }
+  } catch (error) {
+    console.error(error)
+  } finally {
+    codeLoading.value = false
+  }
+}
+
+const startTimer = () => {
+  codeTimer.value = 60
+  const timer = setInterval(() => {
+    codeTimer.value--
+    if (codeTimer.value <= 0) {
+      clearInterval(timer)
+    }
+  }, 1000)
+}
 
 const handleLogin = async () => {
   loading.value = true

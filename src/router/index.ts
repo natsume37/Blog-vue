@@ -105,6 +105,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/403',
     name: 'Forbidden',
     component: () => import('../views/errors/Forbidden.vue')
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue'),
+    meta: { guestOnly: true }
   }
 ]
 

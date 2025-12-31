@@ -5,6 +5,9 @@ export const login = (data: any) => request.post('/auth/login', data)
 export const register = (data: any) => request.post('/auth/register', data)
 export const getCurrentUser = () => request.get('/auth/me')
 export const updateProfile = (data: any) => request.put('/auth/profile', data)
+export const forgotPassword = (data: any) => request.post('/auth/forgot-password', data)
+export const resetPassword = (data: any) => request.post('/auth/reset-password', data)
+export const sendRegisterCode = (data: any) => request.post('/auth/register/send-code', data)
 
 // Articles
 export const getArticles = (params: any) => request.get('/articles', { params })
@@ -16,6 +19,7 @@ export const deleteArticle = (id: number) => request.delete(`/articles/${id}`)
 export const likeArticle = (id: number) => request.post(`/articles/${id}/like`)
 export const unlikeArticle = (id: number) => request.delete(`/articles/${id}/like`)
 export const getArticleLikeStatus = (id: number) => request.get(`/articles/${id}/like/status`)
+export const getHomeArticles = () => request.get('/articles/home/categorized')
 
 // Categories
 export const getCategories = () => request.get('/categories')
@@ -24,7 +28,7 @@ export const updateCategory = (id: number, data: any) => request.put(`/categorie
 export const deleteCategory = (id: number) => request.delete(`/categories/${id}`)
 
 // Tags
-export const getTags = () => request.get('/tags')
+export const getTags = (params?: any) => request.get('/tags', { params })
 export const createTag = (data: any) => request.post('/tags', data)
 export const updateTag = (id: number, data: any) => request.put(`/tags/${id}`, data)
 export const deleteTag = (id: number) => request.delete(`/tags/${id}`)

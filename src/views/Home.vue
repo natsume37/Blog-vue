@@ -140,88 +140,102 @@
             </div>
           </div>
 
-          <!-- Section: Latest -->
-          <section>
-            <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-              <div class="flex items-center gap-4">
-                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2 border-l-4 border-orange-400 pl-3">
-                  <el-icon class="text-orange-400"><Grid /></el-icon> 文章列表
-                </h2>
-                <!-- Sort Tabs -->
-                <div class="flex gap-2 text-sm">
-                  <span 
-                    :class="['cursor-pointer px-2 py-0.5 rounded hover:bg-gray-100', sortType === 'new' ? 'text-miyazaki-blue font-bold' : 'text-gray-500']"
-                    @click="changeSortType('new')"
-                  >最新</span>
-                  <span 
-                    :class="['cursor-pointer px-2 py-0.5 rounded hover:bg-gray-100', sortType === 'hot' ? 'text-miyazaki-blue font-bold' : 'text-gray-500']"
-                    @click="changeSortType('hot')"
-                  >最热</span>
-                  <span 
-                    :class="['cursor-pointer px-2 py-0.5 rounded hover:bg-gray-100', sortType === 'recommend' ? 'text-miyazaki-blue font-bold' : 'text-gray-500']"
-                    @click="changeSortType('recommend')"
-                  >推荐</span>
+          <!-- Latest Articles Section -->
+          <div v-if="!loading">
+            <section class="mb-12">
+              <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                <div class="flex items-center gap-4">
+                  <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2 border-l-4 border-orange-400 pl-3">
+                    <el-icon class="text-orange-400"><Grid /></el-icon> 最新文章
+                  </h2>
                 </div>
-              </div>
-              <router-link to="/category" class="text-xs font-bold text-gray-400 hover:text-miyazaki-blue transition-colors flex items-center gap-1">
-                MORE <el-icon><DArrowRight /></el-icon>
-              </router-link>
-            </div>
-            
-            <!-- Loading -->
-            <Transition mode="out-in" name="fade">
-              <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="i in 6" :key="i" class="bg-white rounded-xl p-4 animate-pulse">
-                  <div class="h-40 bg-gray-200 rounded-lg mb-4"></div>
-                  <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
+                <router-link to="/category" class="text-xs font-bold text-gray-400 hover:text-miyazaki-blue transition-colors flex items-center gap-1">
+                  MORE <el-icon><DArrowRight /></el-icon>
+                </router-link>
               </div>
               
-              <!-- Articles -->
-              <div v-else>
-                <TransitionGroup 
-                  name="list" 
-                  tag="div" 
-                  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                  @before-enter="onBeforeEnter"
-                  @enter="onEnter"
-                >
-                  <ArticleCard 
-                    v-for="(article, index) in articles" 
-                    :key="article.id"
-                    :id="article.id"
-                    :title="article.title"
-                    :summary="article.summary"
-                    :date="article.createTime || ''"
-                    :image="article.cover || defaultCover"
-                    :category="article.categoryName"
-                    :views="article.viewCount"
-                    :likes="article.likeCount"
-                    :comment-count="article.commentCount"
-                    :tags="article.tags"
-                    :data-index="index"
-                  />
-                </TransitionGroup>
-                <div v-if="articles.length === 0" class="text-center py-20 text-gray-400">
-                  <el-icon class="text-6xl mb-4"><Document /></el-icon>
-                  <p>暂无文章</p>
+              <TransitionGroup 
+                tag="div" 
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                @before-enter="onBeforeEnter"
+                @enter="onEnter"
+              >
+                <ArticleCard 
+                  v-for="(article, index) in latestArticles" 
+                  :key="article.id"
+                  :id="article.id"
+                  :title="article.title"
+                  :summary="article.summary"
+                  :date="article.createTime || ''"
+                  :image="article.cover || defaultCover"
+                  :category="article.categoryName"
+                  :views="article.viewCount"
+                  :likes="article.likeCount"
+                  :comment-count="article.commentCount"
+                  :tags="article.tags"
+                  :data-index="index"
+                />
+              </TransitionGroup>
+            </section>
+          </div>
+
+          <!-- Categorized Sections -->
+          <div v-if="loading" class="space-y-12">
+             <div v-for="i in 3" :key="i">
+                <div class="h-8 bg-gray-200 rounded w-32 mb-4 animate-pulse"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div v-for="j in 3" :key="j" class="bg-white rounded-xl p-4 animate-pulse h-64"></div>
                 </div>
+             </div>
+          </div>
+
+          <div v-else>
+            <section v-for="category in categorizedArticles" :key="category.id" class="mb-12">
+              <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                <div class="flex items-center gap-4">
+                  <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2 border-l-4 border-orange-400 pl-3">
+                    <el-icon class="text-orange-400"><Grid /></el-icon> {{ category.name }}
+                  </h2>
+                  <span class="text-sm text-gray-500 hidden sm:block">{{ category.description }}</span>
+                </div>
+                <router-link :to="`/category?categoryId=${category.id}`" class="text-xs font-bold text-gray-400 hover:text-miyazaki-blue transition-colors flex items-center gap-1">
+                  MORE <el-icon><DArrowRight /></el-icon>
+                </router-link>
               </div>
-            </Transition>
+              
+              <TransitionGroup 
+                tag="div" 
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                @before-enter="onBeforeEnter"
+                @enter="onEnter"
+              >
+                <ArticleCard 
+                  v-for="(article, index) in category.articles" 
+                  :key="article.id"
+                  :id="article.id"
+                  :title="article.title"
+                  :summary="article.summary"
+                  :date="article.createTime || ''"
+                  :image="article.cover || defaultCover"
+                  :category="article.categoryName"
+                  :views="article.viewCount"
+                  :likes="article.likeCount"
+                  :comment-count="article.commentCount"
+                  :tags="article.tags"
+                  :data-index="index"
+                />
+              </TransitionGroup>
+              <div v-if="category.articles.length === 0" class="text-center py-10 text-gray-400 bg-white rounded-xl">
+                <el-icon class="text-4xl mb-2"><Document /></el-icon>
+                <p>暂无文章</p>
+              </div>
+            </section>
             
-            <!-- Pagination -->
-            <div v-if="totalArticles > pageSize" class="flex justify-center mt-8">
-              <el-pagination
-                v-model:current-page="currentPage"
-                :page-size="pageSize"
-                :total="totalArticles"
-                layout="prev, pager, next"
-                background
-                @current-change="fetchArticles"
-              />
+            <div v-if="categorizedArticles.length === 0 && !loading" class="text-center py-20 text-gray-400">
+               <el-icon class="text-6xl mb-4"><Document /></el-icon>
+               <p>暂无分类数据</p>
             </div>
-          </section>
+          </div>
         </main>
       </div>
     </div>
@@ -230,6 +244,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Typewriter from '../components/Typewriter.vue'
 import ProfileCard from '../components/ProfileCard.vue'
 import ArticleCard from '../components/ArticleCard.vue'
@@ -237,31 +252,24 @@ import {
   Grid, DArrowRight, Search, Trophy, 
   CollectionTag, Bell, Document, EditPen
 } from '@element-plus/icons-vue'
-import { getArticles, getTags, getSiteInfo } from '../api'
+import { getHomeArticles, getArticles, getTags, getSiteInfo } from '../api'
 import { useSiteStore } from '../stores/site'
 import { useUserStore } from '../stores/user'
 
+const router = useRouter()
 const siteStore = useSiteStore()
 const userStore = useUserStore()
 
-// `router` 在本文件未被使用，已移除以避免 TS6133 未使用变量错误
 // 默认封面图
 const defaultCover = 'https://images.unsplash.com/photo-1516216628859-9bccecab13ca?q=80&w=1738&auto=format&fit=crop'
 
 // 状态
 const loading = ref(false)
-const articles = ref<any[]>([])
+const categorizedArticles = ref<any[]>([])
+const latestArticles = ref<any[]>([])
 const recommendArticles = ref<any[]>([])
 const tags = ref<any[]>([])
 const siteStats = ref({ articleCount: 0, tagCount: 0, viewCount: 0, runDays: 0 })
-
-// 分页
-const currentPage = ref(1)
-const pageSize = ref(9)
-const totalArticles = ref(0)
-
-// 排序
-const sortType = ref('new')
 
 // 搜索
 const searchKeyword = ref('')
@@ -288,28 +296,34 @@ const onEnter = (el: any, done: any) => {
   }, delay)
 }
 
-// 获取文章列表
-const fetchArticles = async () => {
-  // 只有当请求超过 300ms 时才显示 loading，避免闪烁
-  const loadingTimer = setTimeout(() => {
-    loading.value = true
-  }, 300)
-  
+// 获取最新文章（带分页）
+const fetchLatestArticles = async () => {
   try {
     const res: any = await getArticles({
-      current: currentPage.value,
-      size: pageSize.value,
-      sort: sortType.value,
-      keyword: searchKeyword.value || undefined
+      current: 1,
+      size: 6,
+      sort: 'new'
     })
     if (res.code === 200) {
-      articles.value = res.data.records
-      totalArticles.value = res.data.total
+      latestArticles.value = res.data.records
     }
   } catch (error) {
-    console.error('Failed to fetch articles:', error)
+    console.error('Failed to fetch latest articles:', error)
+  }
+}
+
+// 获取首页分类文章列表
+const fetchHomeArticles = async () => {
+  loading.value = true
+  try {
+    await fetchLatestArticles() // 并行或串行获取
+    const res: any = await getHomeArticles()
+    if (res.code === 200) {
+      categorizedArticles.value = res.data
+    }
+  } catch (error) {
+    console.error('Failed to fetch home articles:', error)
   } finally {
-    clearTimeout(loadingTimer)
     loading.value = false
   }
 }
@@ -354,26 +368,21 @@ const fetchSiteStats = async () => {
   }
 }
 
-// 切换排序
-const changeSortType = (type: string) => {
-  sortType.value = type
-  currentPage.value = 1
-  fetchArticles()
-}
-
 // 搜索
 const handleSearch = () => {
-  currentPage.value = 1
-  fetchArticles()
+  if (searchKeyword.value.trim()) {
+    router.push({ path: '/category', query: { keyword: searchKeyword.value } })
+  }
 }
 
 // 初始化
 onMounted(() => {
-  fetchArticles()
+  fetchHomeArticles()
   fetchRecommendArticles()
   fetchTags()
   fetchSiteStats()
 })
+
 </script>
 
 <style scoped>

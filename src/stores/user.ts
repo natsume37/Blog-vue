@@ -104,7 +104,7 @@ export const useUserStore = defineStore('user', () => {
   /**
    * 注册
    */
-  const register = async (data: { username: string; email: string; password: string }): Promise<{ success: boolean; msg: string }> => {
+  const register = async (data: { username: string; email: string; password: string; code: string }): Promise<{ success: boolean; msg: string }> => {
     isLoading.value = true
     try {
       const res: any = await api.register(data)

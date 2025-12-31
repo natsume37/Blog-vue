@@ -33,7 +33,11 @@
       
       <div class="border-t border-gray-100 pt-8 text-center">
         <p class="text-gray-400 text-sm">© 2025 {{ siteStore.siteConfig.siteName }}. All rights reserved. {{ config.site.footerText }}</p>
-        <p class="text-gray-300 text-xs mt-2">{{ config.site.beian }}</p>
+        <p class="text-gray-300 text-xs mt-2">
+          <a href="https://beian.miit.gov.cn/" target="_blank" class="hover:text-miyazaki-blue transition-colors">
+            {{ config.site.beian }}
+          </a>
+        </p>
       </div>
     </div>
     
