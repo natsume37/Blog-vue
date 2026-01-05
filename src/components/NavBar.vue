@@ -37,14 +37,17 @@
           
           <div class="relative group ml-4">
             <input 
+              v-model="searchKeyword"
               type="text" 
               placeholder="Search..." 
               class="pl-4 pr-8 py-1.5 border rounded-full focus:outline-none focus:ring-2 transition-all text-sm w-40 focus:w-56"
               :class="(isTransparentPage && isTop) ? 'bg-white/20 border-white/30 text-white placeholder-white/70 focus:bg-white/30 focus:border-white focus:ring-white/20' : 'bg-gray-50/50 border-gray-200 text-gray-800 focus:border-miyazaki-blue focus:ring-miyazaki-blue/20 group-hover:bg-white'"
+              @keyup.enter="handleSearch"
             />
             <div 
-              class="absolute right-0 top-0 h-full w-8 flex items-center justify-center pointer-events-none transition-colors duration-300"
-              :class="(isTransparentPage && isTop) ? 'text-white/70' : 'text-gray-400'"
+              class="absolute right-0 top-0 h-full w-8 flex items-center justify-center cursor-pointer transition-colors duration-300"
+              :class="(isTransparentPage && isTop) ? 'text-white/70 hover:text-white' : 'text-gray-400 hover:text-miyazaki-blue'"
+              @click="handleSearch"
             >
               <el-icon :size="16"><Search /></el-icon>
             </div>
@@ -117,6 +120,15 @@ const route = useRoute()
 const userStore = useUserStore()
 const siteStore = useSiteStore()
 
+// 搜索
+const searchKeyword = ref('')
+const handleSearch = () => {
+  if (searchKeyword.value.trim()) {
+    router.push({ path: '/category', query: { keyword: searchKeyword.value } })
+    searchKeyword.value = '' // 可选：搜索后清空
+  }
+}
+
 const navLinks = [
   { name: '首页', path: '/', icon: HomeFilled },
   { name: '分类', path: '/category', icon: Menu },
@@ -164,7 +176,6 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
 
-// ...existing code...
 // 处理下拉菜单命令
 const handleCommand = (command: string) => {
   switch (command) {

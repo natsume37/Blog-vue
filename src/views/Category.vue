@@ -10,14 +10,14 @@
       />
       <div class="absolute inset-0 z-20 flex flex-col items-center justify-center text-white text-center p-4">
         <h1 class="text-4xl md:text-5xl font-bold mb-6 font-serif tracking-wider animate-fade-in-up">
-          {{ currentCategory?.quote ? currentCategory.name : '行路难 · 其一' }}
+          {{ route.query.keyword ? `搜索：${route.query.keyword}` : (currentCategory?.quote ? currentCategory.name : '行路难 · 其一') }}
         </h1>
         <div class="w-16 h-1 bg-white/80 mb-6 rounded-full animate-fade-in-up delay-100"></div>
         <p class="text-xl md:text-2xl opacity-90 font-serif mb-3 animate-fade-in-up delay-200">
-          {{ currentCategory?.quote || '长风破浪会有时，直挂云帆济沧海。' }}
+          {{ route.query.keyword ? '寻找你感兴趣的内容' : (currentCategory?.quote || '长风破浪会有时，直挂云帆济沧海。') }}
         </p>
         <p class="text-lg opacity-80 font-serif animate-fade-in-up delay-300">
-          {{ currentCategory?.quote_author || '李白' }}
+          {{ route.query.keyword ? '' : (currentCategory?.quote_author || '李白') }}
         </p>
       </div>
     </div>
@@ -225,6 +225,11 @@ const fetchArticles = async () => {
     }
     if (selectedTag.value) {
       params.tagId = selectedTag.value
+    }
+    
+    // 添加关键词搜索
+    if (route.query.keyword) {
+      params.keyword = route.query.keyword
     }
 
     params.sort = 'new'
