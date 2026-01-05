@@ -12,7 +12,7 @@
           class="danmaku-item"
           :style="danmaku.style"
         >
-          <div class="danmaku-content">
+          <div class="danmaku-content" :style="{ backgroundColor: danmaku.color }">
             <UserAvatar 
               :src="danmaku.avatar" 
               :name="danmaku.nickname"
@@ -84,6 +84,7 @@ interface Danmaku {
   content: string
   nickname: string
   avatar: string
+  color: string
   style: Record<string, string>
 }
 const activeDanmakus = ref<Danmaku[]>([])
@@ -154,10 +155,10 @@ const createDanmaku = (content: string, nickname: string, avatar: string) => {
     content: truncateText(content, 30),
     nickname,
     avatar,
+    color: danmakuColors[colorIndex] || 'rgba(255, 255, 255, 0.95)',
     style: {
       top: `${top}%`,
       animationDuration: `${duration}s`,
-      backgroundColor: danmakuColors[colorIndex] || 'rgba(255, 255, 255, 0.95)',
     }
   }
   
@@ -281,7 +282,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 6px 16px 6px 8px;
-  background: rgba(0, 0, 0, 0.4);
+  /* background: rgba(0, 0, 0, 0.4); 移除默认背景，由内联样式控制 */
   backdrop-filter: blur(4px);
   border-radius: 50px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
