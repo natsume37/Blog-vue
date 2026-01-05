@@ -15,7 +15,10 @@ export const useSiteStore = defineStore('site', () => {
     showNotice: config.modules.showNotice,
     noticeText: config.modules.noticeText,
     aboutContent: '',
-    messageBoardBanners: [] as string[]
+    messageBoardBanners: [] as string[],
+    danmakuSpeed: 10,
+    danmakuOpacity: 0.7,
+    danmakuFontSize: 14
   })
 
   const fetchConfig = async () => {

@@ -63,6 +63,30 @@
               />
             </el-form-item>
           </el-tab-pane>
+
+          <el-tab-pane label="留言板设置">
+            <el-form-item label="弹幕速度(秒)">
+              <el-slider v-model="form.danmakuSpeed" :min="5" :max="30" show-input />
+            </el-form-item>
+            <el-form-item label="弹幕透明度">
+              <el-slider v-model="form.danmakuOpacity" :min="0.1" :max="1" :step="0.1" show-input />
+            </el-form-item>
+            <el-form-item label="弹幕字号(px)">
+              <el-input-number v-model="form.danmakuFontSize" :min="12" :max="30" />
+            </el-form-item>
+            
+            <el-divider content-position="left">背景图片列表 (随机展示)</el-divider>
+            <div v-for="(_banner, index) in form.messageBoardBanners" :key="index" class="flex gap-2 mb-2 items-start">
+              <div class="flex-grow">
+                <el-input v-model="form.messageBoardBanners[index]" placeholder="图片URL" />
+                <div class="mt-2" v-if="form.messageBoardBanners[index]">
+                  <img :src="form.messageBoardBanners[index]" class="h-24 object-cover rounded-lg" />
+                </div>
+              </div>
+              <el-button type="danger" :icon="Delete" circle @click="removeBanner(index)" />
+            </div>
+            <el-button type="primary" plain size="small" @click="addBanner" class="mt-2">添加背景图</el-button>
+          </el-tab-pane>
         </el-tabs>
       </el-form>
     </el-card>
@@ -88,8 +112,20 @@ const form = ref({
   heroSentences: [] as string[],
   showNotice: true,
   noticeText: '',
-  aboutContent: ''
+  aboutContent: '',
+  messageBoardBanners: [] as string[],
+  danmakuSpeed: 10,
+  danmakuOpacity: 0.7,
+  danmakuFontSize: 14
 })
+
+const addBanner = () => {
+  form.value.messageBoardBanners.push('')
+}
+
+const removeBanner = (index: number) => {
+  form.value.messageBoardBanners.splice(index, 1)
+}
 
 const fetchConfig = async () => {
   loading.value = true

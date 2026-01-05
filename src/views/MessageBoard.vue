@@ -101,13 +101,13 @@ const currentBanner = computed(() => {
   return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop'
 })
 
-// 弹幕颜色
-const danmakuColors = [
-  'rgba(255, 255, 255, 0.95)',
-  'rgba(255, 230, 200, 0.95)',
-  'rgba(200, 255, 230, 0.95)',
-  'rgba(230, 200, 255, 0.95)',
-  'rgba(255, 200, 230, 0.95)',
+// 弹幕颜色 (RGB部分)
+const danmakuBaseColors = [
+  '255, 255, 255',
+  '255, 230, 200',
+  '200, 255, 230',
+  '230, 200, 255',
+  '255, 200, 230',
 ]
 
 // 截断文本
@@ -147,18 +147,29 @@ const initDanmakus = () => {
 const createDanmaku = (content: string, nickname: string, avatar: string) => {
   const id = danmakuId++
   const top = Math.random() * 70 + 10 // 10% - 80% 的高度范围
-  const duration = Math.random() * 5 + 10 // 10-15秒
-  const colorIndex = Math.floor(Math.random() * danmakuColors.length)
+  
+  // 使用配置的速度 (默认10秒)
+  const baseSpeed = siteStore.siteConfig.danmakuSpeed || 10
+  const duration = Math.random() * 5 + baseSpeed 
+  
+  // 使用配置的透明度 (默认0.7)
+  const opacity = siteStore.siteConfig.danmakuOpacity || 0.7
+  const colorIndex = Math.floor(Math.random() * danmakuBaseColors.length)
+  const color = `rgba(${danmakuBaseColors[colorIndex]}, ${opacity})`
+  
+  // 使用配置的字体大小 (默认14px)
+  const fontSize = `${siteStore.siteConfig.danmakuFontSize || 14}px`
   
   const danmaku: Danmaku = {
     id,
     content: truncateText(content, 30),
     nickname,
     avatar,
-    color: danmakuColors[colorIndex] || 'rgba(255, 255, 255, 0.95)',
+    color,
     style: {
       top: `${top}%`,
       animationDuration: `${duration}s`,
+      fontSize
     }
   }
   
