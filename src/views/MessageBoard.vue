@@ -133,14 +133,19 @@ const fetchMessages = async () => {
 const initDanmakus = () => {
   // 初始加载一些弹幕
   setTimeout(() => {
-    const count = Math.min(messages.value.length, 10)
-    for (let i = 0; i < count; i++) {
-      const msg = messages.value[i]
+    if (messages.value.length === 0) return
+    
+    // 初始生成一批弹幕，确保屏幕不空
+    // 如果留言少于20条，就循环使用，确保至少有15条初始弹幕
+    const initialCount = 15
+    
+    for (let i = 0; i < initialCount; i++) {
+      const msg = messages.value[i % messages.value.length]
       setTimeout(() => {
         createDanmaku(msg.content, msg.user?.nickname || '游客', msg.user?.avatar || '')
-      }, i * 800)
+      }, i * 800) // 每800ms发射一条
     }
-  }, 1000)
+  }, 500)
 }
 
 // 创建弹幕
@@ -227,18 +232,27 @@ onMounted(async () => {
   await fetchMessages()
   initDanmakus()
   
-  // 定时循环弹幕
-  danmakuTimer = window.setInterval(() => {
+  // 启动弹幕循环
+  startDanmakuLoop()
+})
+
+const startDanmakuLoop = () => {
+  const loop = () => {
     if (messages.value.length > 0) {
+      // 随机选取一条留言
       const randomMsg = messages.value[Math.floor(Math.random() * messages.value.length)]
       createDanmaku(randomMsg.content, randomMsg.user?.nickname || '游客', randomMsg.user?.avatar || '')
     }
-  }, 3000)
-})
+    // 获取最新配置的间隔
+    const interval = siteStore.siteConfig.danmakuInterval || 1200
+    danmakuTimer = window.setTimeout(loop, interval)
+  }
+  loop()
+}
 
 onUnmounted(() => {
   if (danmakuTimer) {
-    clearInterval(danmakuTimer)
+    clearTimeout(danmakuTimer)
   }
 })
 </script>

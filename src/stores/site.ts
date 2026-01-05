@@ -18,7 +18,8 @@ export const useSiteStore = defineStore('site', () => {
     messageBoardBanners: [] as string[],
     danmakuSpeed: 10,
     danmakuOpacity: 0.7,
-    danmakuFontSize: 14
+    danmakuFontSize: 14,
+    danmakuInterval: 1200
   })
 
   const fetchConfig = async () => {

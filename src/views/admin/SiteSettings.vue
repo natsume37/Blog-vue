@@ -74,6 +74,10 @@
             <el-form-item label="弹幕字号(px)">
               <el-input-number v-model="form.danmakuFontSize" :min="12" :max="30" />
             </el-form-item>
+            <el-form-item label="弹幕密度(ms)">
+              <el-slider v-model="form.danmakuInterval" :min="200" :max="5000" :step="100" show-input />
+              <div class="text-gray-400 text-xs">数值越小，弹幕生成越快</div>
+            </el-form-item>
             
             <el-divider content-position="left">背景图片列表 (随机展示)</el-divider>
             <div v-for="(_banner, index) in form.messageBoardBanners" :key="index" class="flex gap-2 mb-2 items-start">
@@ -116,7 +120,8 @@ const form = ref({
   messageBoardBanners: [] as string[],
   danmakuSpeed: 10,
   danmakuOpacity: 0.7,
-  danmakuFontSize: 14
+  danmakuFontSize: 14,
+  danmakuInterval: 1200
 })
 
 const addBanner = () => {
