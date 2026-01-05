@@ -101,8 +101,10 @@
 import { ref, onMounted } from 'vue'
 import { Delete } from '@element-plus/icons-vue'
 import { getSiteConfig, updateSiteConfig } from '../../api'
+import { useSiteStore } from '../../stores/site'
 import { ElMessage } from 'element-plus'
 
+const siteStore = useSiteStore()
 const loading = ref(false)
 const saving = ref(false)
 
@@ -153,6 +155,8 @@ const saveConfig = async () => {
     const res: any = await updateSiteConfig(form.value)
     if (res.code === 200) {
       ElMessage.success('配置已保存')
+      // 更新本地 Store
+      siteStore.fetchConfig()
     } else {
       ElMessage.error(res.msg || '保存失败')
     }

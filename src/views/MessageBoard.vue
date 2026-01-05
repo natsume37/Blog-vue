@@ -229,6 +229,8 @@ const shootDanmaku = async () => {
 
 // 初始化
 onMounted(async () => {
+  // 确保获取最新配置
+  await siteStore.fetchConfig()
   await fetchMessages()
   initDanmakus()
   
