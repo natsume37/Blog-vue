@@ -141,7 +141,7 @@ const isHidden = ref(false)
 const lastScrollTop = ref(0)
 const isTop = ref(true)
 
-const isTransparentPage = computed(() => route.path === '/' || route.path.startsWith('/article/'))
+const isTransparentPage = computed(() => route.path === '/' || route.path.startsWith('/article/') || route.path === '/message')
 
 const handleScroll = () => {
   const currentScrollTop = window.scrollY || document.documentElement.scrollTop
