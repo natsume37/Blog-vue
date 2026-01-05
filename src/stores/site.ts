@@ -14,7 +14,8 @@ export const useSiteStore = defineStore('site', () => {
     heroSentences: config.hero.sentences,
     showNotice: config.modules.showNotice,
     noticeText: config.modules.noticeText,
-    aboutContent: ''
+    aboutContent: '',
+    messageBoardBanners: [] as string[]
   })
 
   const fetchConfig = async () => {

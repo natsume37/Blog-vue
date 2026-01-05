@@ -86,10 +86,17 @@
 import { ref, onMounted, computed, reactive } from 'vue'
 import { getChangelogs, createChangelog, updateChangelog, deleteChangelog } from '../api'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import CommentSection from '../components/CommentSection.vue'
 import { useUserStore } from '../stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+
+// 配置 marked
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+})
 
 const userStore = useUserStore()
 const isAdmin = computed(() => userStore.userInfo?.is_admin === true)
@@ -113,7 +120,9 @@ const formatDate = (dateStr: string) => {
 }
 
 const renderContent = (content: string) => {
-  return marked(content)
+  if (!content) return ''
+  const html = marked(content) as string
+  return DOMPurify.sanitize(html)
 }
 
 const fetchLogs = async () => {

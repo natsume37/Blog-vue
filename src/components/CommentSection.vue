@@ -28,7 +28,7 @@
             <textarea
               v-model="newComment"
               :placeholder="
-                replyTo ? `回复 @${replyTo.nickname}...` : '写下你的想法...'
+                replyTo ? `回复 @${replyTo.nickname}...` : '支持 Markdown 格式，可以插入图片和链接...'
               "
               class="comment-textarea"
               rows="3"
@@ -39,7 +39,13 @@
             </div>
           </div>
           <div class="flex justify-between items-center mt-3">
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
+              <span class="text-xs text-gray-400 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 15h2v-4h2v4h2V9h-2v2H9V9H7v6zm8-6h2v6h2l-3 4-3-4h2V9z"/>
+                </svg>
+                支持 Markdown
+              </span>
               <button
                 v-if="replyTo"
                 @click="cancelReply"
@@ -199,11 +205,10 @@
                   formatTime(comment.created_at)
                 }}</span>
               </div>
-              <p
-                class="text-gray-700 leading-relaxed whitespace-pre-wrap break-words"
-              >
-                {{ comment.content }}
-              </p>
+              <div
+                class="comment-content prose prose-sm max-w-none text-gray-700"
+                v-html="renderMarkdown(comment.content)"
+              ></div>
               <div class="flex items-center gap-4 mt-3">
                 <button
                   @click="handleLike(comment)"
@@ -292,11 +297,10 @@
                         formatTime(reply.created_at)
                       }}</span>
                     </div>
-                    <p
-                      class="text-gray-600 text-sm mt-1 whitespace-pre-wrap break-words"
-                    >
-                      {{ reply.content }}
-                    </p>
+                    <div
+                      class="comment-content prose prose-sm max-w-none text-gray-600 text-sm mt-1"
+                      v-html="renderMarkdown(reply.content)"
+                    ></div>
                     <div class="flex items-center gap-3 mt-2">
                       <button
                         @click="handleLikeReply(reply)"
@@ -402,8 +406,26 @@
 import { ref, computed, watch } from "vue";
 import { useUserStore } from "../stores/user";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 import * as api from "../api";
 import UserAvatar from "./UserAvatar.vue";
+
+// 配置 marked
+marked.setOptions({
+  breaks: true, // 支持换行
+  gfm: true, // 支持 GitHub 风格的 Markdown
+});
+
+// 渲染 Markdown 内容
+const renderMarkdown = (content: string) => {
+  if (!content) return "";
+  const html = marked(content) as string;
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["p", "br", "strong", "em", "a", "code", "pre", "img", "ul", "ol", "li", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "del", "table", "thead", "tbody", "tr", "th", "td"],
+    ALLOWED_ATTR: ["href", "src", "alt", "title", "target", "rel", "class"],
+  });
+};
 
 interface Props {
   contentId: number;
@@ -620,7 +642,7 @@ const handleDeleteReply = async (reply: any) => {
   }
 };
 
-// 格式化时间
+// 格式化时间 - 精确到秒
 const formatTime = (dateStr: string) => {
   const date = new Date(dateStr);
   const now = new Date();
@@ -635,7 +657,15 @@ const formatTime = (dateStr: string) => {
   if (hours < 24) return `${hours} 小时前`;
   if (days < 7) return `${days} 天前`;
 
-  return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
+  // 超过7天显示完整日期时间（精确到秒）
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  const second = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 };
 
 // 监听内容ID变化
@@ -759,6 +789,63 @@ watch(
 .reply-item {
   display: flex;
   gap: 0.75rem;
+}
+
+/* 评论内容 Markdown 样式 */
+.comment-content {
+  word-break: break-word;
+}
+
+.comment-content :deep(p) {
+  margin: 0.25rem 0;
+}
+
+.comment-content :deep(a) {
+  color: rgb(16, 185, 129);
+  text-decoration: none;
+}
+
+.comment-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.comment-content :deep(img) {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.comment-content :deep(code) {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.comment-content :deep(pre) {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.comment-content :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.comment-content :deep(blockquote) {
+  border-left: 3px solid rgb(16, 185, 129);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  color: rgb(107, 114, 128);
+}
+
+.comment-content :deep(ul),
+.comment-content :deep(ol) {
+  padding-left: 1.5rem;
+  margin: 0.25rem 0;
 }
 
 /* 动画 */

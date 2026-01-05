@@ -1,144 +1,66 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 pt-24 pb-12">
-    <div class="max-w-4xl mx-auto px-4">
-      <!-- Header -->
-      <div class="text-center mb-12">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4 font-serif">留言树洞 💬</h1>
-        <p class="text-gray-500">在这里留下你的足迹，分享你的想法</p>
-      </div>
-
-      <!-- 流动留言墙 -->
-      <div v-if="wallMessages.length > 0" class="message-wall-container mb-12 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-4">
-        <div class="message-wall">
-          <!-- 第一行 - 向左流动 -->
-          <div class="message-row scroll-left">
-            <div class="message-track">
-              <div 
-                v-for="(msg, index) in wallMessagesRow1" 
-                :key="'row1-' + index"
-                class="message-bubble"
-                :style="{ 
-                  '--delay': index * 0.1 + 's',
-                  '--bg': bubbleColors[index % bubbleColors.length]
-                }"
-              >
-                <UserAvatar 
-                  :src="msg.avatar" 
-                  :name="msg.nickname || '游客'"
-                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
-                />
-                <span class="message-name">{{ msg.nickname || '游客' }}</span>
-                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
-              </div>
-            </div>
-            <div class="message-track">
-              <div 
-                v-for="(msg, index) in wallMessagesRow1" 
-                :key="'row1-dup-' + index"
-                class="message-bubble"
-                :style="{ 
-                  '--delay': index * 0.1 + 's',
-                  '--bg': bubbleColors[index % bubbleColors.length]
-                }"
-              >
-                <UserAvatar 
-                  :src="msg.avatar" 
-                  :name="msg.nickname || '游客'"
-                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
-                />
-                <span class="message-name">{{ msg.nickname || '游客' }}</span>
-                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 第二行 - 向右流动 -->
-          <div class="message-row scroll-right">
-            <div class="message-track">
-              <div 
-                v-for="(msg, index) in wallMessagesRow2" 
-                :key="'row2-' + index"
-                class="message-bubble"
-                :style="{ 
-                  '--delay': index * 0.15 + 's',
-                  '--bg': bubbleColors[(index + 3) % bubbleColors.length]
-                }"
-              >
-                <UserAvatar 
-                  :src="msg.avatar" 
-                  :name="msg.nickname || '游客'"
-                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
-                />
-                <span class="message-name">{{ msg.nickname || '游客' }}</span>
-                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
-              </div>
-            </div>
-            <div class="message-track">
-              <div 
-                v-for="(msg, index) in wallMessagesRow2" 
-                :key="'row2-dup-' + index"
-                class="message-bubble"
-                :style="{ 
-                  '--delay': index * 0.15 + 's',
-                  '--bg': bubbleColors[(index + 3) % bubbleColors.length]
-                }"
-              >
-                <UserAvatar 
-                  :src="msg.avatar" 
-                  :name="msg.nickname || '游客'"
-                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
-                />
-                <span class="message-name">{{ msg.nickname || '游客' }}</span>
-                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 第三行 - 向左流动（较慢） -->
-          <div class="message-row scroll-left-slow">
-            <div class="message-track">
-              <div 
-                v-for="(msg, index) in wallMessagesRow3" 
-                :key="'row3-' + index"
-                class="message-bubble"
-                :style="{ 
-                  '--delay': index * 0.12 + 's',
-                  '--bg': bubbleColors[(index + 5) % bubbleColors.length]
-                }"
-              >
-                <UserAvatar 
-                  :src="msg.avatar" 
-                  :name="msg.nickname || '游客'"
-                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
-                />
-                <span class="message-name">{{ msg.nickname || '游客' }}</span>
-                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
-              </div>
-            </div>
-            <div class="message-track">
-              <div 
-                v-for="(msg, index) in wallMessagesRow3" 
-                :key="'row3-dup-' + index"
-                class="message-bubble"
-                :style="{ 
-                  '--delay': index * 0.12 + 's',
-                  '--bg': bubbleColors[(index + 5) % bubbleColors.length]
-                }"
-              >
-                <UserAvatar 
-                  :src="msg.avatar" 
-                  :name="msg.nickname || '游客'"
-                  class="w-8 h-8 border border-white/30 shadow-sm flex-shrink-0"
-                />
-                <span class="message-name">{{ msg.nickname || '游客' }}</span>
-                <span class="message-text">{{ truncateText(msg.content, 30) }}</span>
-              </div>
-            </div>
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <!-- Hero Banner Section with Danmaku -->
+    <div class="hero-banner relative overflow-hidden" :style="{ backgroundImage: `url(${currentBanner})` }">
+      <div class="absolute inset-0 bg-black/30"></div>
+      
+      <!-- 弹幕容器 -->
+      <div class="danmaku-container absolute inset-0 overflow-hidden pointer-events-none">
+        <div 
+          v-for="danmaku in activeDanmakus" 
+          :key="danmaku.id"
+          class="danmaku-item"
+          :style="danmaku.style"
+        >
+          <div class="danmaku-content">
+            <UserAvatar 
+              :src="danmaku.avatar" 
+              :name="danmaku.nickname"
+              class="w-6 h-6 border border-white/50 shadow-sm"
+            />
+            <span class="danmaku-text">{{ danmaku.content }}</span>
           </div>
         </div>
       </div>
       
-      <!-- Message Form -->
+      <!-- 中间发射区域 -->
+      <div class="relative z-10 flex flex-col items-center justify-center h-full px-4">
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 text-shadow">弹幕</h1>
+        
+        <div class="danmaku-input-wrapper w-full max-w-xl">
+          <div class="relative flex items-center bg-white/20 backdrop-blur-md rounded-full border border-white/30 p-1">
+            <input 
+              v-model="danmakuText"
+              type="text"
+              placeholder="说点什么吧~"
+              class="flex-1 bg-transparent text-white placeholder-white/70 px-4 py-3 outline-none"
+              maxlength="50"
+              @keyup.enter="shootDanmaku"
+            />
+            <button 
+              @click="shootDanmaku"
+              :disabled="!danmakuText.trim() || shootingDanmaku"
+              class="px-6 py-2.5 bg-gradient-to-r from-pink-500 to-orange-400 text-white rounded-full font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+              发射
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 留言列表区域 -->
+    <div class="max-w-4xl mx-auto px-4 py-12">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4 font-serif">留言板 💬</h2>
+        <p class="text-gray-500">{{ total }} 条留言</p>
+      </div>
+      
+      <!-- Message Form (Detailed) -->
       <div class="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 mb-8 border border-white/50">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <el-input 
@@ -244,17 +166,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { User, Message, Promotion, ChatLineSquare } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getMessages, createMessage } from '../api'
+import { useSiteStore } from '../stores/site'
+import { useUserStore } from '../stores/user'
 import UserAvatar from '../components/UserAvatar.vue'
+
+const router = useRouter()
+const siteStore = useSiteStore()
+const userStore = useUserStore()
 
 // 状态
 const loading = ref(false)
 const submitting = ref(false)
+const shootingDanmaku = ref(false)
 const messages = ref<any[]>([])
-const wallMessages = ref<any[]>([])
+const danmakuText = ref('')
+
+// 弹幕相关
+interface Danmaku {
+  id: number
+  content: string
+  nickname: string
+  avatar: string
+  style: Record<string, string>
+}
+const activeDanmakus = ref<Danmaku[]>([])
+let danmakuId = 0
+let danmakuTimer: number | null = null
+
+// 背景图
+const currentBanner = computed(() => {
+  const banners = siteStore.siteConfig.messageBoardBanners
+  if (banners && banners.length > 0) {
+    const randomIndex = Math.floor(Math.random() * banners.length)
+    return banners[randomIndex]
+  }
+  return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop'
+})
 
 // 分页
 const currentPage = ref(1)
@@ -268,39 +220,14 @@ const form = reactive({
   content: ''
 })
 
-// 留言墙颜色
-const bubbleColors = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+// 弹幕颜色
+const danmakuColors = [
+  'rgba(255, 255, 255, 0.95)',
+  'rgba(255, 230, 200, 0.95)',
+  'rgba(200, 255, 230, 0.95)',
+  'rgba(230, 200, 255, 0.95)',
+  'rgba(255, 200, 230, 0.95)',
 ]
-
-// 将留言分成三行
-const wallMessagesRow1 = computed(() => {
-  const msgs = wallMessages.value
-  return msgs.filter((_, i) => i % 3 === 0)
-})
-
-const wallMessagesRow2 = computed(() => {
-  const msgs = wallMessages.value
-  return msgs.filter((_, i) => i % 3 === 1)
-})
-
-const wallMessagesRow3 = computed(() => {
-  const msgs = wallMessages.value
-  return msgs.filter((_, i) => i % 3 === 2)
-})
-
-// 获取随机头像表情
-// const getAvatarEmoji = (nickname: string) => {
-//   const index = nickname ? nickname.charCodeAt(0) % avatarEmojis.length : Math.floor(Math.random() * avatarEmojis.length)
-//   return avatarEmojis[index]
-// }
 
 // 截断文本
 const truncateText = (text: string, maxLength: number) => {
@@ -308,7 +235,7 @@ const truncateText = (text: string, maxLength: number) => {
   return text.substring(0, maxLength) + '...'
 }
 
-// 格式化时间
+// 格式化时间 - 精确到秒
 const formatTime = (dateStr: string) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -324,21 +251,100 @@ const formatTime = (dateStr: string) => {
   if (hours < 24) return `${hours} 小时前`
   if (days < 7) return `${days} 天前`
   
-  return date.toLocaleDateString('zh-CN')
+  // 超过7天显示完整日期时间（精确到秒）
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  const second = String(date.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
 }
 
-// 获取留言墙数据（获取更多用于展示）
-const fetchWallMessages = async () => {
+// 创建弹幕
+const createDanmaku = (content: string, nickname: string, avatar: string) => {
+  const id = danmakuId++
+  const top = Math.random() * 70 + 10 // 10% - 80% 的高度范围
+  const duration = Math.random() * 5 + 10 // 10-15秒
+  const colorIndex = Math.floor(Math.random() * danmakuColors.length)
+  
+  const danmaku: Danmaku = {
+    id,
+    content: truncateText(content, 30),
+    nickname,
+    avatar,
+    style: {
+      top: `${top}%`,
+      animationDuration: `${duration}s`,
+      backgroundColor: danmakuColors[colorIndex] || 'rgba(255, 255, 255, 0.95)',
+    }
+  }
+  
+  activeDanmakus.value.push(danmaku)
+  
+  // 动画结束后移除
+  setTimeout(() => {
+    activeDanmakus.value = activeDanmakus.value.filter(d => d.id !== id)
+  }, duration * 1000)
+}
+
+// 发射弹幕
+const shootDanmaku = async () => {
+  if (!danmakuText.value.trim()) return
+  
+  // 检查登录状态
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录后再发射弹幕')
+    router.push('/login')
+    return
+  }
+  
+  shootingDanmaku.value = true
   try {
-    const res: any = await getMessages({
-      current: 1,
-      size: 30 // 获取更多数据用于留言墙
+    const res: any = await createMessage({
+      content: danmakuText.value.trim(),
+      nickname: userStore.userInfo?.nickname || userStore.userInfo?.username,
+      email: userStore.userInfo?.email
     })
+    
     if (res.code === 200) {
-      wallMessages.value = res.data.records
+      // 立即显示弹幕
+      createDanmaku(
+        danmakuText.value.trim(),
+        userStore.userInfo?.nickname || userStore.userInfo?.username || '游客',
+        userStore.userInfo?.avatar || ''
+      )
+      danmakuText.value = ''
+      ElMessage.success('发射成功！')
+      // 刷新列表
+      fetchMessages()
+    } else {
+      ElMessage.error(res.msg || '发射失败')
     }
   } catch (error) {
-    console.error('Failed to fetch wall messages:', error)
+    console.error('Failed to shoot danmaku:', error)
+    ElMessage.error('发射失败，请稍后重试')
+  } finally {
+    shootingDanmaku.value = false
+  }
+}
+
+// 初始化弹幕（从历史留言中加载）
+const initDanmakus = async () => {
+  try {
+    const res: any = await getMessages({ current: 1, size: 20 })
+    if (res.code === 200) {
+      const records = res.data.records
+      // 延迟依次创建弹幕
+      records.forEach((msg: any, index: number) => {
+        setTimeout(() => {
+          createDanmaku(msg.content, msg.nickname || '游客', msg.avatar || '')
+        }, index * 800)
+      })
+    }
+  } catch (error) {
+    console.error('Failed to init danmakus:', error)
   }
 }
 
@@ -382,7 +388,6 @@ const handleSubmit = async () => {
       // 刷新列表
       currentPage.value = 1
       fetchMessages()
-      fetchWallMessages() // 同时刷新留言墙
     } else {
       ElMessage.error(res.msg || '留言失败')
     }
@@ -397,172 +402,98 @@ const handleSubmit = async () => {
 // 初始化
 onMounted(() => {
   fetchMessages()
-  fetchWallMessages()
+  initDanmakus()
+  
+  // 定时循环弹幕
+  danmakuTimer = window.setInterval(() => {
+    if (messages.value.length > 0) {
+      const randomMsg = messages.value[Math.floor(Math.random() * messages.value.length)]
+      createDanmaku(randomMsg.content, randomMsg.nickname || '游客', randomMsg.avatar || '')
+    }
+  }, 3000)
+})
+
+onUnmounted(() => {
+  if (danmakuTimer) {
+    clearInterval(danmakuTimer)
+  }
 })
 </script>
 
 <style scoped>
-/* 留言墙容器 */
-.message-wall-container {
-  position: relative;
+/* Hero Banner */
+.hero-banner {
+  height: 60vh;
+  min-height: 400px;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
-.message-wall-container::before,
-.message-wall-container::after {
-  content: '';
+@media (max-width: 768px) {
+  .hero-banner {
+    height: 50vh;
+    min-height: 350px;
+    background-attachment: scroll;
+  }
+}
+
+.text-shadow {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* 弹幕样式 */
+.danmaku-container {
+  z-index: 5;
+}
+
+.danmaku-item {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 60px;
-  z-index: 10;
-  pointer-events: none;
+  right: -300px;
+  animation: danmakuMove linear forwards;
+  will-change: transform;
 }
 
-.message-wall-container::before {
-  left: 0;
-  background: linear-gradient(to right, rgb(239 246 255 / 0.9), transparent);
-}
-
-.message-wall-container::after {
-  right: 0;
-  background: linear-gradient(to left, rgb(240 253 244 / 0.9), transparent);
-}
-
-.message-wall {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.message-row {
-  display: flex;
-  width: max-content;
-}
-
-.message-track {
-  display: flex;
-  gap: 16px;
-  padding: 4px 8px;
-}
-
-/* 向左滚动 */
-.scroll-left {
-  animation: scrollLeft 40s linear infinite;
-}
-
-.scroll-left:hover {
-  animation-play-state: paused;
-}
-
-/* 向右滚动 */
-.scroll-right {
-  animation: scrollRight 45s linear infinite;
-}
-
-.scroll-right:hover {
-  animation-play-state: paused;
-}
-
-/* 向左滚动（较慢） */
-.scroll-left-slow {
-  animation: scrollLeft 55s linear infinite;
-}
-
-.scroll-left-slow:hover {
-  animation-play-state: paused;
-}
-
-@keyframes scrollLeft {
-  0% {
+@keyframes danmakuMove {
+  from {
     transform: translateX(0);
   }
-  100% {
-    transform: translateX(-50%);
+  to {
+    transform: translateX(calc(-100vw - 300px));
   }
 }
 
-@keyframes scrollRight {
-  0% {
-    transform: translateX(-50%);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-/* 留言气泡 */
-.message-bubble {
+.danmaku-content {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: var(--bg);
-  border-radius: 24px;
+  padding: 6px 16px 6px 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   white-space: nowrap;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  cursor: default;
-  animation: fadeIn 0.5s ease var(--delay) both;
 }
 
-.message-bubble:hover {
-  transform: scale(1.05) translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+.danmaku-text {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.message-avatar {
-  font-size: 18px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-.message-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.message-text {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* 输入框样式 */
+.danmaku-input-wrapper input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* 响应式 */
 @media (max-width: 640px) {
-  .message-bubble {
-    padding: 6px 12px;
+  .danmaku-content {
+    padding: 4px 12px 4px 6px;
     gap: 6px;
   }
   
-  .message-avatar {
-    font-size: 14px;
-  }
-  
-  .message-name {
-    font-size: 11px;
-  }
-  
-  .message-text {
+  .danmaku-text {
     font-size: 12px;
-    max-width: 120px;
-  }
-  
-  .message-wall-container::before,
-  .message-wall-container::after {
-    width: 30px;
   }
 }
 </style>
