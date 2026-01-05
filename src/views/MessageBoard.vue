@@ -120,9 +120,9 @@ const truncateText = (text: string, maxLength: number) => {
 const fetchMessages = async () => {
   try {
     // 获取最新的50条评论作为弹幕源
-    const res: any = await getComments('message_board', 0, { page: 1, size: 50 })
+    const res: any = await getComments('message_board', 0, { current: 1, size: 50 })
     if (res.code === 200) {
-      messages.value = res.data.list
+      messages.value = res.data.records
     }
   } catch (error) {
     console.error('获取弹幕数据失败:', error)
