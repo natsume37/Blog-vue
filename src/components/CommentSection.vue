@@ -1,141 +1,37 @@
 <template>
   <div class="comment-section">
     <!-- 评论标题 -->
-    <div class="flex items-center gap-3 mb-8">
-      <div
-        class="w-1 h-8 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-full"
-      ></div>
-      <h3 class="text-2xl font-bold text-gray-800">评论区</h3>
-      <span
-        class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-sm font-medium"
-      >
-        {{ totalComments }} 条评论
-      </span>
+    <div class="flex items-center gap-3 mb-6">
+      <h3 class="text-xl font-bold text-gray-800">💬 评论</h3>
+      <span class="text-sm text-gray-400">{{ totalComments }} 条</span>
     </div>
 
-    <!-- 评论输入框 -->
-    <div class="comment-input-card mb-8">
-      <div v-if="userStore.isLoggedIn" class="flex gap-4">
-        <div class="flex-shrink-0">
-          <UserAvatar
-            :src="userStore.userInfo?.avatar"
-            :name="userStore.userInfo?.nickname || userStore.userInfo?.username"
-            class="w-12 h-12 border-2 border-white shadow-md"
-          />
-        </div>
-        <div class="flex-1">
-          <div class="relative">
-            <textarea
-              v-model="newComment"
-              :placeholder="
-                replyTo ? `回复 @${replyTo.nickname}...` : '支持 Markdown 格式，可以插入图片和链接...'
-              "
-              class="comment-textarea"
-              rows="3"
-              maxlength="2000"
-            ></textarea>
-            <div class="absolute bottom-3 right-3 text-xs text-gray-400">
-              {{ newComment.length }} / 2000
-            </div>
-          </div>
-          <div class="flex justify-between items-center mt-3">
-            <div class="flex gap-2 items-center">
-              <span class="text-xs text-gray-400 flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 15h2v-4h2v4h2V9h-2v2H9V9H7v6zm8-6h2v6h2l-3 4-3-4h2V9z"/>
-                </svg>
-                支持 Markdown
-              </span>
-              <button
-                v-if="replyTo"
-                @click="cancelReply"
-                class="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                取消回复
-              </button>
-            </div>
-            <button
-              @click="submitComment"
-              :disabled="!newComment.trim() || submitting"
-              class="submit-btn"
-            >
-              <span v-if="submitting" class="flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                    fill="none"
-                  />
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                发送中...
-              </span>
-              <span v-else class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  />
-                </svg>
-                发表评论
-              </span>
-            </button>
-          </div>
-        </div>
+    <!-- 简化的评论输入框 - 任何人都可以输入 -->
+    <div class="comment-input-wrapper mb-8">
+      <div class="relative">
+        <textarea
+          v-model="newComment"
+          :placeholder="replyTo ? `回复 @${replyTo.nickname}...` : '说点什么...'"
+          class="comment-input"
+          rows="3"
+          maxlength="2000"
+        ></textarea>
       </div>
-      <div v-else class="text-center py-8">
-        <div
-          class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center"
-        >
-          <svg
-            class="w-8 h-8 text-emerald-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
+      <div class="flex justify-between items-center mt-3">
+        <div class="flex items-center gap-3">
+          <span v-if="replyTo" class="text-xs text-gray-500">
+            回复 @{{ replyTo.nickname }}
+            <button @click="cancelReply" class="ml-1 text-gray-400 hover:text-gray-600">✕</button>
+          </span>
+          <span class="text-xs text-gray-400">支持 Markdown</span>
         </div>
-        <p class="text-gray-500 mb-4">登录后即可参与评论讨论</p>
-        <router-link
-          to="/login"
-          class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300"
+        <button
+          @click="submitComment"
+          :disabled="!newComment.trim() || submitting"
+          class="submit-btn"
         >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-            />
-          </svg>
-          立即登录
-        </router-link>
+          {{ submitting ? '发送中...' : '提交' }}
+        </button>
       </div>
     </div>
 
@@ -404,12 +300,15 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { useRouter } from "vue-router";
 import { useUserStore } from "../stores/user";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import * as api from "../api";
 import UserAvatar from "./UserAvatar.vue";
+
+const router = useRouter();
 
 // 配置 marked
 marked.setOptions({
@@ -490,11 +389,17 @@ const loadMore = () => {
   fetchComments(currentPage.value + 1, true);
 };
 
-// 提交评论
+// 提交评论（在提交时才检查登录状态）
 const submitComment = async () => {
-  if (!newComment.value.trim()) return;
+  if (!newComment.value.trim()) {
+    ElMessage.warning("请输入评论内容");
+    return;
+  }
+  
+  // 提交时检查登录状态，未登录则跳转登录页
   if (!userStore.isLoggedIn) {
-    ElMessage.warning("请先登录");
+    ElMessage.warning("请先登录后再评论");
+    router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } });
     return;
   }
 
@@ -519,7 +424,6 @@ const submitComment = async () => {
       ElMessage.success("评论成功");
       newComment.value = "";
       cancelReply();
-      // 重新加载评论
       fetchComments(1);
     } else {
       ElMessage.error(res.msg || "评论失败");
@@ -682,45 +586,46 @@ watch(
 
 <style scoped>
 .comment-section {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
+  padding: 1.5rem 0;
 }
 
-.comment-input-card {
-  background: linear-gradient(to bottom right, white, rgba(249, 250, 251, 0.5));
-  border-radius: 1rem;
-  padding: 1.5rem;
-  border: 1px solid rgb(243, 244, 246);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+/* 输入框样式 */
+.comment-input-wrapper {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 1rem;
 }
 
-.comment-textarea {
+.comment-input {
   width: 100%;
   padding: 0.75rem 1rem;
   background: white;
-  border: 1px solid rgb(229, 231, 235);
-  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   resize: none;
   outline: none;
-  transition: all 0.3s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
-.comment-textarea:focus {
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-  border-color: rgb(52, 211, 153);
+.comment-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .submit-btn {
-  padding: 0.625rem 1.5rem;
-  background: linear-gradient(to right, rgb(16, 185, 129), rgb(20, 184, 166));
+  padding: 0.5rem 1.25rem;
+  background: #10b981;
   color: white;
-  border-radius: 9999px;
+  border-radius: 20px;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
-.submit-btn:hover {
-  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+.submit-btn:hover:not(:disabled) {
+  background: #059669;
 }
 
 .submit-btn:disabled {
@@ -728,106 +633,106 @@ watch(
   cursor: not-allowed;
 }
 
-.submit-btn:disabled:hover {
-  box-shadow: none;
-}
-
-.empty-comments {
-  text-align: center;
-  padding: 4rem 0;
-}
-
+/* 评论卡片 */
 .comment-card {
   background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  border: 1px solid rgb(243, 244, 246);
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  transition: all 0.3s;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  border: 1px solid #f3f4f6;
+  transition: box-shadow 0.2s;
 }
 
 .comment-card:hover {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* 操作按钮 */
 .action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  color: rgb(107, 114, 128);
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #9ca3af;
   transition: color 0.2s;
 }
 
 .action-btn:hover {
-  color: rgb(16, 185, 129);
+  color: #10b981;
 }
 
 .action-btn-sm {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 3px;
   font-size: 0.75rem;
-  color: rgb(156, 163, 175);
+  color: #9ca3af;
   transition: color 0.2s;
 }
 
 .action-btn-sm:hover {
-  color: rgb(16, 185, 129);
+  color: #10b981;
 }
 
+/* 回复区域 */
 .replies-container {
-  background: rgba(249, 250, 251, 0.8);
-  border-radius: 0.75rem;
-  padding: 1rem;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 0.75rem;
 }
 
 .replies-container > * + * {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 .reply-item {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
-/* 评论内容 Markdown 样式 */
+/* Markdown 内容样式 */
 .comment-content {
   word-break: break-word;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #374151;
 }
 
 .comment-content :deep(p) {
   margin: 0.25rem 0;
 }
 
-.comment-content :deep(a) {
-  color: rgb(16, 185, 129);
-  text-decoration: none;
+.comment-content :deep(p:first-child) {
+  margin-top: 0;
 }
 
-.comment-content :deep(a:hover) {
-  text-decoration: underline;
+.comment-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.comment-content :deep(a) {
+  color: #10b981;
 }
 
 .comment-content :deep(img) {
   max-width: 100%;
-  max-height: 300px;
-  border-radius: 0.5rem;
+  max-height: 200px;
+  border-radius: 6px;
   margin: 0.5rem 0;
 }
 
 .comment-content :deep(code) {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-size: 0.875em;
+  background: #f3f4f6;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.85em;
 }
 
 .comment-content :deep(pre) {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 0.75rem;
-  border-radius: 0.5rem;
+  background: #f3f4f6;
+  padding: 0.5rem;
+  border-radius: 6px;
   overflow-x: auto;
+  font-size: 0.85em;
 }
 
 .comment-content :deep(pre code) {
@@ -836,31 +741,36 @@ watch(
 }
 
 .comment-content :deep(blockquote) {
-  border-left: 3px solid rgb(16, 185, 129);
+  border-left: 3px solid #10b981;
   padding-left: 0.75rem;
   margin: 0.5rem 0;
-  color: rgb(107, 114, 128);
+  color: #6b7280;
 }
 
 .comment-content :deep(ul),
 .comment-content :deep(ol) {
-  padding-left: 1.5rem;
+  padding-left: 1.25rem;
   margin: 0.25rem 0;
 }
 
-/* 动画 */
+/* 空状态 */
+.empty-comments {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+/* 列表动画 */
 .comment-list-enter-active,
 .comment-list-leave-active {
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
 }
 
 .comment-list-enter-from {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(-10px);
 }
 
 .comment-list-leave-to {
   opacity: 0;
-  transform: translateX(-20px);
 }
 </style>

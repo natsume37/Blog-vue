@@ -421,10 +421,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Hero Banner */
+/* Hero Banner - 全屏自适应 */
 .hero-banner {
-  height: 60vh;
-  min-height: 400px;
+  height: 100vh;
+  min-height: 500px;
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -432,8 +432,8 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .hero-banner {
-    height: 50vh;
-    min-height: 350px;
+    height: 100vh;
+    min-height: 400px;
     background-attachment: scroll;
   }
 }
@@ -467,17 +467,20 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px 6px 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  padding: 8px 16px 8px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .danmaku-text {
   font-size: 14px;
-  color: #333;
+  color: #fff;
   font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* 输入框样式 */
