@@ -25,7 +25,7 @@
       
       <!-- 中间发射区域 -->
       <div class="relative z-10 flex flex-col items-center justify-center h-full px-4">
-        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 text-shadow">弹幕</h1>
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 text-shadow">{{ siteStore.siteConfig.messageBoardTitle || '弹幕' }}</h1>
         
         <div class="danmaku-input-wrapper w-full max-w-xl">
           <div class="relative flex items-center bg-white/20 backdrop-blur-md rounded-full border border-white/30 p-1">
@@ -325,7 +325,7 @@ onUnmounted(() => {
 }
 
 .danmaku-text {
-  font-size: 14px;
+  font-size: inherit;
   color: #fff;
   font-weight: 500;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);

@@ -16,6 +16,7 @@ export const useSiteStore = defineStore('site', () => {
     noticeText: config.modules.noticeText,
     aboutContent: '',
     messageBoardBanners: [] as string[],
+    messageBoardTitle: '弹幕',
     danmakuSpeed: 10,
     danmakuOpacity: 0.7,
     danmakuFontSize: 14,

@@ -65,6 +65,9 @@
           </el-tab-pane>
 
           <el-tab-pane label="留言板设置">
+            <el-form-item label="页面标题">
+              <el-input v-model="form.messageBoardTitle" placeholder="默认为'弹幕'" />
+            </el-form-item>
             <el-form-item label="弹幕速度(秒)">
               <el-slider v-model="form.danmakuSpeed" :min="5" :max="30" show-input />
             </el-form-item>
@@ -120,6 +123,7 @@ const form = ref({
   noticeText: '',
   aboutContent: '',
   messageBoardBanners: [] as string[],
+  messageBoardTitle: '弹幕',
   danmakuSpeed: 10,
   danmakuOpacity: 0.7,
   danmakuFontSize: 14,
