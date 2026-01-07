@@ -12,7 +12,7 @@ export const sendRegisterCode = (data: any) => request.post('/auth/register/send
 // Articles
 export const getArticles = (params: any) => request.get('/articles', { params })
 export const getAdminArticles = (params: any) => request.get('/articles/admin/list', { params })
-export const getArticle = (id: number) => request.get(`/articles/${id}`)
+export const getArticle = (id: number, params?: any) => request.get(`/articles/${id}`, { params })
 export const createArticle = (data: any) => request.post('/articles', data)
 export const updateArticle = (id: number, data: any) => request.put(`/articles/${id}`, data)
 export const deleteArticle = (id: number) => request.delete(`/articles/${id}`)
@@ -74,3 +74,13 @@ export const likeComment = (id: number) => request.post(`/comments/${id}/like`)
 export const getAdminComments = (params: any) => request.get('/comments/admin/list', { params })
 export const updateAdminComment = (id: number, data: any) => request.put(`/comments/admin/${id}`, data)
 export const deleteAdminComment = (id: number) => request.delete(`/comments/admin/${id}`)
+
+// Upload
+export const getUploadToken = () => request.get('/upload/token')
+export const getPrivateUrl = (key: string) => request.get(`/upload/private-url`, { params: { key } })
+export const getSignedUrl = (key: string, t: number, sign: string) => 
+  request.get(`/upload/signed-url`, { params: { key, t, sign } })
+export const encryptResourceKey = (key: string) => 
+  request.get(`/upload/encrypt-key`, { params: { key } })
+export const getBatchPrivateUrls = (keys: string[]) => 
+  request.get(`/upload/batch-private-urls`, { params: { keys: keys.join(',') } })

@@ -41,15 +41,55 @@
           </template>
         </el-table-column>
         
-        <el-table-column label="状态" width="120">
+        <el-table-column label="可见性" width="160">
           <template #default="{ row }">
-            <span 
-              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium"
-              :class="row.is_published ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
-            >
-              <span class="w-1.5 h-1.5 rounded-full" :class="row.is_published ? 'bg-green-500' : 'bg-gray-400'"></span>
-              {{ row.is_published ? '已发布' : '草稿' }}
-            </span>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">发布</span>
+                <el-switch 
+                  v-model="row.is_published" 
+                  size="small"
+                  style="--el-switch-on-color: #10b981"
+                  :loading="row.updating"
+                  @change="handleStatusChange(row, 'is_published')"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">隐藏</span>
+                <el-switch 
+                  v-model="row.is_hidden" 
+                  size="small"
+                  style="--el-switch-on-color: #f97316"
+                  :loading="row.updating"
+                  @change="handleStatusChange(row, 'is_hidden')"
+                />
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="推广" width="160">
+           <template #default="{ row }">
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">置顶</span>
+                <el-switch 
+                  v-model="row.is_top" 
+                  size="small"
+                  :loading="row.updating"
+                  @change="handleStatusChange(row, 'is_top')"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">推荐</span>
+                <el-switch 
+                  v-model="row.is_recommend" 
+                  size="small"
+                  :loading="row.updating"
+                  @change="handleStatusChange(row, 'is_recommend')"
+                />
+              </div>
+            </div>
           </template>
         </el-table-column>
         
@@ -123,6 +163,22 @@ const fetchArticles = async () => {
     console.error(error)
   } finally {
     loading.value = false
+  }
+}
+
+const handleStatusChange = async (row: any, field: string) => {
+  row.updating = true
+  try {
+    const payload: any = {}
+    payload[field] = row[field]
+    await api.updateArticle(row.id, payload)
+    ElMessage.success('更新成功')
+  } catch (error) {
+    row[field] = !row[field] // Revert change
+    console.error(error) 
+    ElMessage.error('更新失败')
+  } finally {
+    row.updating = false
   }
 }
 

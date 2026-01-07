@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex bg-gray-100">
     <!-- Sidebar -->
-    <aside class="w-64 bg-white shadow-md flex flex-col">
+    <aside class="w-64 bg-white shadow-md flex flex-col flex-shrink-0 z-10">
       <div class="p-6 border-b border-gray-100">
         <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
           <el-icon class="text-miyazaki-blue"><Management /></el-icon>
@@ -34,6 +34,12 @@
           <el-icon><User /></el-icon> 用户管理
         </router-link>
         
+        <router-link to="/admin/resources" 
+          class="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-miyazaki-blue transition-colors"
+          active-class="bg-blue-50 text-miyazaki-blue font-medium">
+          <el-icon><Picture /></el-icon> 图库管理
+        </router-link>
+
         <router-link to="/admin/monitor" 
           class="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-miyazaki-blue transition-colors"
           active-class="bg-blue-50 text-miyazaki-blue font-medium">
@@ -98,7 +104,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { Management, Document, Collection, HomeFilled, SwitchButton, User, Monitor, ChatDotSquare, Setting, Timer, DataLine } from '@element-plus/icons-vue'
+import { Management, Document, Collection, HomeFilled, SwitchButton, User, Monitor, ChatDotSquare, Setting, Timer, DataLine, Picture } from '@element-plus/icons-vue'
 import { useUserStore } from '../../stores/user'
 import { ElMessage } from 'element-plus'
 import UserAvatar from '../../components/UserAvatar.vue'

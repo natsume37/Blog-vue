@@ -2,16 +2,35 @@
   <div class="min-h-screen bg-white">
     <!-- Loading -->
     <div v-if="loading" class="pt-20 max-w-4xl mx-auto px-4 py-12">
-      <div class="animate-pulse">
-        <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div class="h-4 bg-gray-200 rounded w-1/4 mb-8"></div>
-        <div class="h-64 bg-gray-200 rounded-xl mb-8"></div>
-        <div class="space-y-3">
-          <div class="h-4 bg-gray-200 rounded"></div>
-          <div class="h-4 bg-gray-200 rounded"></div>
-          <div class="h-4 bg-gray-200 rounded w-5/6"></div>
-        </div>
-      </div>
+      <!-- Loading skeleton ... -->
+    </div>
+
+    <!-- Password Protection -->
+    <div v-else-if="isLocked" class="max-w-4xl mx-auto px-4 py-20 text-center pt-32">
+       <div class="bg-white rounded-2xl shadow-lg p-10 max-w-md mx-auto border border-gray-100">
+         <div class="mb-6 bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-blue-500">
+           <el-icon :size="40"><Lock /></el-icon>
+         </div>
+         <h2 class="text-2xl font-bold text-gray-800 mb-2">文章受保护</h2>
+         <p class="text-gray-500 mb-6">{{ protectionQuestion || '请输入访问密码查看内容' }}</p>
+         
+         <div class="space-y-4">
+           <el-input 
+             v-model="protectionAnswer" 
+             placeholder="请输入答案" 
+             type="password"
+             show-password
+             @keyup.enter="handleUnlock"
+           >
+             <template #prefix>
+               <el-icon><Key /></el-icon>
+             </template>
+           </el-input>
+           <el-button type="primary" class="w-full !rounded-lg !h-10" @click="handleUnlock" :loading="unlocking">
+             验证访问
+           </el-button>
+         </div>
+       </div>
     </div>
     
     <div v-else-if="article">
@@ -191,7 +210,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Calendar, Folder, View, Star, Share, Document, ChatDotSquare, List } from '@element-plus/icons-vue'
+import { Calendar, Folder, View, Star, Share, Document, ChatDotSquare, List, Lock, Key } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getArticle, getArticles, likeArticle, unlikeArticle, getArticleLikeStatus } from '../api'
 import { marked } from 'marked'
@@ -211,6 +230,11 @@ const isLiked = ref(false)
 const liking = ref(false)
 const showToc = ref(false)
 const toc = ref<any[]>([])
+
+const isLocked = ref(false)
+const protectionQuestion = ref('')
+const protectionAnswer = ref('')
+const unlocking = ref(false)
 
 // 配置 marked - 启用 GFM 和换行
 marked.setOptions({
@@ -276,25 +300,62 @@ const formatDate = (dateStr: string) => {
 const fetchArticle = async () => {
   const id = Number(route.params.id)
   if (!id) return
-  
+
   loading.value = true
+  isLocked.value = false // Reset
   try {
     const res: any = await getArticle(id)
+    
+    // Check for protected status
+    if (res.code === 403) {
+      isLocked.value = true
+      protectionQuestion.value = res.data.protection_question
+      article.value = null
+      return
+    }
+
     if (res.code === 200) {
       article.value = res.data
-      // 获取相邻文章
+      // 获取相邻文章等
       fetchAdjacentArticles(id)
-      // 获取点赞状态
       fetchLikeStatus(id)
     } else {
       article.value = null
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch article:', error)
-    article.value = null
   } finally {
     loading.value = false
   }
+}
+
+// 验证解锁
+const handleUnlock = async () => {
+    if (!protectionAnswer.value) {
+        ElMessage.warning('请输入答案')
+        return
+    }
+    unlocking.value = true
+    try {
+        const id = Number(route.params.id)
+        const res: any = await getArticle(id, { answer: protectionAnswer.value })
+        
+        if (res.code === 200) {
+            article.value = res.data
+            isLocked.value = false
+            ElMessage.success('验证通过')
+            fetchAdjacentArticles(id)
+            fetchLikeStatus(id)
+        } else {
+            ElMessage.error('答案错误')
+            // Don't setup article.value if failed
+        }
+    } catch (e) {
+        console.error(e)
+        ElMessage.error('验证失败')
+    } finally {
+        unlocking.value = false
+    }
 }
 
 // 获取点赞状态
