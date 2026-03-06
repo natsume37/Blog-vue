@@ -122,6 +122,11 @@
       <el-form label-position="top">
         <el-form-item label="文章摘要">
           <el-input v-model="form.summary" type="textarea" :rows="3" placeholder="请输入文章摘要（可选）" />
+          <div class="mt-2">
+            <el-button size="small" :loading="aiSummaryLoading" @click="handleGenerateSummary">
+              AI 一键摘要
+            </el-button>
+          </div>
         </el-form-item>
 
         <el-form-item label="分类">
@@ -312,6 +317,7 @@ const viewMode = ref('split') // edit, split, preview
 const editorRef = ref<HTMLTextAreaElement | null>(null)
 const showAIDrawer = ref(false)
 const aiGenerating = ref(false)
+const aiSummaryLoading = ref(false)
 const aiKeywordsInput = ref('')
 const aiOutlineInput = ref('')
 const aiForm = ref({
@@ -600,6 +606,35 @@ const handleGenerateDraft = async () => {
     ElMessage.error('AI 生成异常')
   } finally {
     aiGenerating.value = false
+  }
+}
+
+const handleGenerateSummary = async () => {
+  const content = (form.value.content || '').trim()
+  if (!content) {
+    ElMessage.warning('请先填写正文内容')
+    return
+  }
+
+  aiSummaryLoading.value = true
+  try {
+    const res: any = await api.generateArticleSummary({
+      title: form.value.title,
+      content_markdown: content,
+      max_length: 140,
+      style: '简洁专业'
+    })
+    if (res.code !== 200 || !res.data?.summary) {
+      ElMessage.error(res.msg || '摘要生成失败')
+      return
+    }
+    form.value.summary = res.data.summary
+    ElMessage.success(`摘要已生成（${res.data.provider}/${res.data.model}）`)
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('AI 摘要生成异常')
+  } finally {
+    aiSummaryLoading.value = false
   }
 }
 
