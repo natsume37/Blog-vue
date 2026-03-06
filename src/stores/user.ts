@@ -15,7 +15,6 @@ export interface UserInfo {
 
 export const useUserStore = defineStore('user', () => {
   // State
-  const token = ref<string | null>(localStorage.getItem('token'))
   const userInfo = ref<UserInfo | null>(null)
   const isLoading = ref(false)
 
@@ -30,24 +29,22 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // Getters
-  const isLoggedIn = computed(() => !!token.value)
+  const isLoggedIn = computed(() => !!userInfo.value)
   const isAdmin = computed(() => userInfo.value?.is_admin === true)
 
   // Actions
-  const setToken = (newToken: string) => {
-    token.value = newToken
-    localStorage.setItem('token', newToken)
-  }
-
   const setUserInfo = (info: UserInfo) => {
     userInfo.value = info
     localStorage.setItem('userInfo', JSON.stringify(info))
   }
 
-  const logout = () => {
-    token.value = null
+  const logout = async () => {
+    try {
+      await api.logout()
+    } catch (_error) {
+      // Ignore backend logout failures and still clear local state.
+    }
     userInfo.value = null
-    localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
   }
 
@@ -56,10 +53,6 @@ export const useUserStore = defineStore('user', () => {
    * 用于页面刷新后恢复登录状态
    */
   const verifyToken = async (): Promise<boolean> => {
-    if (!token.value) {
-      return false
-    }
-
     isLoading.value = true
     try {
       const res: any = await api.getCurrentUser()
@@ -88,7 +81,6 @@ export const useUserStore = defineStore('user', () => {
     try {
       const res: any = await api.login({ username, password })
       if (res.code === 200 && res.data) {
-        setToken(res.data.token)
         setUserInfo(res.data.userInfo)
         return { success: true, msg: '登录成功' }
       } else {
@@ -142,14 +134,12 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     // State
-    token,
     userInfo,
     isLoading,
     // Getters
     isLoggedIn,
     isAdmin,
     // Actions
-    setToken,
     setUserInfo,
     logout,
     verifyToken,

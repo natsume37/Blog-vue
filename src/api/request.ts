@@ -4,22 +4,9 @@ import { apiConfig } from '../config'
 
 const service = axios.create({
   baseURL: apiConfig.baseURL,
-  timeout: apiConfig.timeout
+  timeout: apiConfig.timeout,
+  withCredentials: true
 })
-
-// Request interceptor
-service.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
 
 // Response interceptor
 service.interceptors.response.use(
@@ -30,8 +17,7 @@ service.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // Token 无效或过期，清除登录状态
-          localStorage.removeItem('token')
+          // 会话失效，清理本地用户信息（cookie 由后端控制）
           localStorage.removeItem('userInfo')
           // 不自动跳转，让路由守卫处理
           ElMessage.error('登录已过期，请重新登录')

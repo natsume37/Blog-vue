@@ -130,11 +130,9 @@ let isInitialized = false
 router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
   
-  // 首次加载时验证 token
-  if (!isInitialized && userStore.token) {
-    isInitialized = true
+  // 首次加载时校验 cookie 会话
+  if (!isInitialized) {
     await userStore.verifyToken()
-  } else {
     isInitialized = true
   }
 

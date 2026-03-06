@@ -214,6 +214,7 @@ import { Calendar, Folder, View, Star, Share, Document, ChatDotSquare, List, Loc
 import { ElMessage } from 'element-plus'
 import { getArticle, getArticles, likeArticle, unlikeArticle, getArticleLikeStatus } from '../api'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import CommentSection from '../components/CommentSection.vue'
 
 const route = useRoute()
@@ -272,7 +273,10 @@ const renderedContent = computed(() => {
   // 更新 TOC
   toc.value = newToc
   
-  return html
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'a', 'code', 'pre', 'img', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'del', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel', 'class', 'id']
+  })
 })
 
 // 滚动到指定标题

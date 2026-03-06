@@ -2,6 +2,7 @@ import request from './request'
 
 // Auth
 export const login = (data: any) => request.post('/auth/login', data)
+export const logout = () => request.post('/auth/logout')
 export const register = (data: any) => request.post('/auth/register', data)
 export const getCurrentUser = () => request.get('/auth/me')
 export const updateProfile = (data: any) => request.put('/auth/profile', data)
