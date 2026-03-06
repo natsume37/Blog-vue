@@ -700,18 +700,113 @@ onMounted(async () => {
   font-style: italic;
 }
 
-/* Add typography styles for markdown preview if not using Tailwind Typography plugin */
-:deep(.prose) h1 { font-size: 2.25em; font-weight: 800; margin-bottom: 0.8em; color: #1e293b; letter-spacing: -0.025em; }
-:deep(.prose) h2 { font-size: 1.5em; font-weight: 700; margin-bottom: 0.6em; margin-top: 1.5em; color: #334155; letter-spacing: -0.025em; }
-:deep(.prose) h3 { font-size: 1.25em; font-weight: 600; margin-bottom: 0.5em; margin-top: 1.2em; color: #475569; }
-:deep(.prose) p { margin-bottom: 1.5em; line-height: 1.8; color: #4b5563; }
-:deep(.prose) ul { list-style-type: disc; padding-left: 1.6em; margin-bottom: 1.5em; color: #4b5563; }
-:deep(.prose) ol { list-style-type: decimal; padding-left: 1.6em; margin-bottom: 1.5em; color: #4b5563; }
-:deep(.prose) blockquote { border-left: 4px solid #dbeafe; padding-left: 1.2em; color: #64748b; font-style: italic; background: #f8fafc; padding-top: 0.5rem; padding-bottom: 0.5rem; border-radius: 0 0.5rem 0.5rem 0; }
-:deep(.prose) pre { background-color: #1e293b; padding: 1.5em; border-radius: 0.75em; overflow-x: auto; margin-bottom: 1.5em; color: #e2e8f0; }
-:deep(.prose) code { background-color: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 0.375rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: #ef4444; font-size: 0.9em; }
-:deep(.prose) img { max-width: 100%; border-radius: 0.75em; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); margin: 1.5em 0; }
-:deep(.prose) a { color: #3b82f6; text-decoration: none; border-bottom: 1px solid #93c5fd; transition: all 0.2s; }
-:deep(.prose) a:hover { color: #2563eb; border-bottom-color: #2563eb; }
-:deep(.prose) video { border-radius: 0.75em; margin: 1.5em 0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+/* Markdown preview typography */
+:deep(.prose) {
+  color: #334155;
+  font-size: 1.03rem;
+  line-height: 1.9;
+}
+
+:deep(.prose) h1,
+:deep(.prose) h2,
+:deep(.prose) h3 {
+  color: #0f172a;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+:deep(.prose) h1 {
+  font-size: 2.05rem;
+  font-weight: 800;
+  margin: 0.2em 0 0.8em;
+}
+
+:deep(.prose) h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.5em 0 0.65em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:deep(.prose) h3 {
+  font-size: 1.22rem;
+  font-weight: 650;
+  margin: 1.2em 0 0.55em;
+}
+
+:deep(.prose) p,
+:deep(.prose) ul,
+:deep(.prose) ol {
+  margin-bottom: 1.05em;
+}
+
+:deep(.prose) ul,
+:deep(.prose) ol {
+  padding-left: 1.5em;
+}
+
+:deep(.prose) li + li {
+  margin-top: 0.3em;
+}
+
+:deep(.prose) blockquote {
+  margin: 1.2em 0;
+  border-left: 4px solid #93c5fd;
+  border-radius: 0 12px 12px 0;
+  padding: 0.75em 1em;
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f5f9 100%);
+  color: #475569;
+}
+
+:deep(.prose) pre {
+  margin: 1.25em 0;
+  padding: 1em 1.1em;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #1e293b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow-x: auto;
+}
+
+:deep(.prose) pre code {
+  display: block;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  text-shadow: none;
+}
+
+:deep(.prose) :not(pre) > code {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.15rem 0.42rem;
+  color: #be123c;
+  font-size: 0.88em;
+}
+
+:deep(.prose) a {
+  color: #2563eb;
+  text-decoration: none;
+  border-bottom: 1px solid #93c5fd;
+  transition: all 0.2s;
+}
+
+:deep(.prose) a:hover {
+  color: #1d4ed8;
+  border-bottom-color: #1d4ed8;
+}
+
+:deep(.prose) img,
+:deep(.prose) video {
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 1.2em 0;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
 </style>
