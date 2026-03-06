@@ -50,18 +50,24 @@ onMounted(() => {
 <style>
 .apple-page-enter-active,
 .apple-page-leave-active {
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
 .apple-page-enter-from {
   opacity: 0;
-  transform: translateY(20px) scale(0.98);
-  filter: blur(4px);
+  transform: translate3d(0, 14px, 0) scale(0.985);
 }
 
 .apple-page-leave-to {
   opacity: 0;
-  transform: scale(0.98);
-  filter: blur(4px);
+  transform: translate3d(0, -8px, 0) scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apple-page-enter-active,
+  .apple-page-leave-active {
+    transition-duration: 0.01ms;
+  }
 }
 </style>

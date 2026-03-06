@@ -1,12 +1,13 @@
 <template>
   <router-link
     :to="`/article/${id}`"
-    class="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 overflow-hidden flex flex-col h-full group border border-gray-100 relative cursor-pointer hover:-translate-y-1 active:scale-[0.99]"
+    class="article-card bg-white rounded-2xl shadow-md hover:shadow-2xl transition-transform duration-300 overflow-hidden flex flex-col h-full group border border-gray-100 relative cursor-pointer hover:-translate-y-1 active:scale-[0.99]"
   >
     <!-- Cover Image -->
     <div class="aspect-[16/9] overflow-hidden relative">
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors z-10"></div>
-      <img :src="image" alt="Article Cover" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+      <img :src="image" alt="Article Cover" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+      <div class="cover-shine"></div>
       
       <!-- Category Overlay -->
       <div class="absolute top-3 left-3 z-20">
@@ -83,3 +84,37 @@ const formatDate = (str: string) => {
   return str.split(' ')[0]
 }
 </script>
+
+<style scoped>
+@keyframes card-shine {
+  from { transform: translateX(-140%) rotate(12deg); }
+  to { transform: translateX(240%) rotate(12deg); }
+}
+
+.article-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.article-card:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+}
+
+.cover-shine {
+  position: absolute;
+  inset: 0 auto 0 -60%;
+  width: 38%;
+  background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  pointer-events: none;
+}
+
+.group:hover .cover-shine {
+  animation: card-shine 0.95s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group:hover .cover-shine {
+    animation: none;
+  }
+}
+</style>

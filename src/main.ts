@@ -6,7 +6,6 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import './style.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import 'animate.css'
 
 const app = createApp(App)
 

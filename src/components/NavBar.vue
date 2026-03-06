@@ -140,10 +140,11 @@ const navLinks = [
 const isHidden = ref(false)
 const lastScrollTop = ref(0)
 const isTop = ref(true)
+const ticking = ref(false)
 
 const isTransparentPage = computed(() => route.path === '/' || route.path.startsWith('/article/') || route.path === '/message')
 
-const handleScroll = () => {
+const updateScrollState = () => {
   const currentScrollTop = window.scrollY || document.documentElement.scrollTop
   
   // 更新是否在顶部状态
@@ -166,10 +167,19 @@ const handleScroll = () => {
   lastScrollTop.value = currentScrollTop <= 0 ? 0 : currentScrollTop
 }
 
+const handleScroll = () => {
+  if (ticking.value) return
+  ticking.value = true
+  requestAnimationFrame(() => {
+    updateScrollState()
+    ticking.value = false
+  })
+}
+
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
+  window.addEventListener('scroll', handleScroll, { passive: true })
   // 初始化检查
-  handleScroll()
+  updateScrollState()
 })
 
 onUnmounted(() => {
