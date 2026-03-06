@@ -128,6 +128,20 @@
             </el-button>
           </div>
         </el-form-item>
+        
+        <el-divider border-style="dashed">SEO 设置</el-divider>
+        <el-form-item label="URL Slug">
+          <el-input v-model="form.slug" placeholder="例如: vue3-component-architecture" />
+        </el-form-item>
+        <el-form-item label="SEO 标题">
+          <el-input v-model="form.seo_title" placeholder="可选，默认使用文章标题" />
+        </el-form-item>
+        <el-form-item label="SEO 描述">
+          <el-input v-model="form.seo_description" type="textarea" :rows="2" placeholder="可选，默认使用文章摘要" />
+        </el-form-item>
+        <el-form-item label="SEO 关键词">
+          <el-input v-model="form.seo_keywords" placeholder="多个关键词用英文逗号分隔" />
+        </el-form-item>
 
         <el-form-item label="分类">
           <el-select v-model="form.category_id" placeholder="选择分类" class="w-full">
@@ -340,9 +354,13 @@ const aiForm = ref({
 // Form Data
 const form = ref<{
   title: string
+  slug: string
   summary: string
   content: string
   cover: string
+  seo_title: string
+  seo_description: string
+  seo_keywords: string
   category_id: number | null
   tag_ids: number[]
   is_published: boolean
@@ -355,9 +373,13 @@ const form = ref<{
   protection_answer: string
 }>({
   title: '',
+  slug: '',
   summary: '',
   content: '',
   cover: '',
+  seo_title: '',
+  seo_description: '',
+  seo_keywords: '',
   category_id: null,
   tag_ids: [],
   is_published: true,
@@ -665,9 +687,13 @@ onMounted(async () => {
         const article = articleRes.data
         form.value = {
           title: article.title,
+          slug: article.slug || '',
           summary: article.summary || '',
           content: article.content,
           cover: article.cover || '',
+          seo_title: article.seo_title || '',
+          seo_description: article.seo_description || '',
+          seo_keywords: article.seo_keywords || '',
           category_id: article.category_id,
           tag_ids: article.tags ? article.tags.map((t: any) => t.id) : [],
           is_published: article.is_published,
