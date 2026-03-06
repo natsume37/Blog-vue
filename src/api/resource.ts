@@ -27,18 +27,19 @@ export const getResources = (params: any) => {
   })
 }
 
-export const deleteResource = (id: number) => {
+export const deleteResource = (id: number, force = false) => {
   return request({
     url: `/resources/${id}`,
-    method: 'delete'
+    method: 'delete',
+    params: { force }
   })
 }
 
-export const batchDeleteResource = (ids: number[]) => {
+export const batchDeleteResource = (ids: number[], force = false) => {
   return request({
     url: '/resources/admin/batch-delete',
     method: 'post',
-    data: { ids }
+    data: { ids, force }
   })
 }
 
@@ -47,5 +48,12 @@ export const syncResourcesFromQiniu = (data: { prefix?: string; limit?: number }
     url: '/resources/admin/sync-qiniu',
     method: 'post',
     data
+  })
+}
+
+export const getResourceReferences = (id: number) => {
+  return request({
+    url: `/resources/${id}/references`,
+    method: 'get'
   })
 }

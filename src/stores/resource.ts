@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getResources, deleteResource, batchDeleteResource, syncResourcesFromQiniu } from '../api/resource'
+import { getResources, deleteResource, batchDeleteResource, syncResourcesFromQiniu, getResourceReferences } from '../api/resource'
 import { getBatchPrivateUrls, getPrivateUrl } from '../api'
 import { ElMessage } from 'element-plus'
 
@@ -129,14 +129,15 @@ export const useResourceStore = defineStore('resource', () => {
   }
 
   // 删除资源
-  const removeResource = async (id: number) => {
-    await deleteResource(id)
+  const removeResource = async (id: number, force = false) => {
+    await deleteResource(id, force)
     await fetchData()
   }
 
-  const removeResources = async (ids: number[]) => {
-    await batchDeleteResource(ids)
+  const removeResources = async (ids: number[], force = false) => {
+    const res = await batchDeleteResource(ids, force)
     await fetchData()
+    return res
   }
 
   const syncQiniu = async (prefix = '', limit = 1000) => {
@@ -184,6 +185,10 @@ export const useResourceStore = defineStore('resource', () => {
     fetchData()
   }
 
+  const getReferences = async (id: number) => {
+    return await getResourceReferences(id)
+  }
+
   return {
     items,
     total,
@@ -198,6 +203,7 @@ export const useResourceStore = defineStore('resource', () => {
     removeResources,
     syncQiniu,
     refreshItemUrl,
+    getReferences,
     setFilter,
     setPage,
     setPageSize,

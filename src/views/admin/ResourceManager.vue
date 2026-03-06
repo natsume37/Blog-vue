@@ -126,12 +126,21 @@ const handleSelect = (item: ResourceItem) => {
 
 const handleDelete = async (item: ResourceItem) => {
   try {
-    await ElMessageBox.confirm('确定删除该资源？此操作将同时删除七牛云上的文件。', '警告', { 
+    const refRes: any = await store.getReferences(item.id)
+    const refCount = refRes?.data?.article_refs?.length || 0
+    let force = false
+    let message = '确定删除该资源？此操作将同时删除七牛云上的文件。'
+    if (refCount > 0) {
+      force = true
+      message = `该资源被 ${refCount} 篇文章引用，继续删除会导致文章资源失效。确定强制删除吗？`
+    }
+
+    await ElMessageBox.confirm(message, '警告', {
       type: 'warning',
       confirmButtonText: '删除',
       cancelButtonText: '取消'
     })
-    await store.removeResource(item.id)
+    await store.removeResource(item.id, force)
     ElMessage.success('删除成功')
     selectedIds.value = selectedIds.value.filter((id) => id !== item.id)
   } catch (e: any) {
@@ -148,8 +157,13 @@ const handleBatchDelete = async () => {
       '批量删除确认',
       { type: 'warning' }
     )
-    await store.removeResources(selectedIds.value)
-    ElMessage.success('批量删除成功')
+    const res: any = await store.removeResources(selectedIds.value, false)
+    const skipped = res?.data?.skipped_refs?.length || 0
+    if (skipped > 0) {
+      ElMessage.warning(`批量删除完成，${skipped} 个资源因被文章引用而跳过`)
+    } else {
+      ElMessage.success('批量删除成功')
+    }
     selectedIds.value = []
   } catch (e: any) {
     if (e !== 'cancel') {
