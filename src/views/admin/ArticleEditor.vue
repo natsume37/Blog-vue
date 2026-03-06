@@ -12,6 +12,14 @@
         <el-button size="large" @click="showAIDrawer = true" class="!border-gray-200 hover:!bg-gray-50 hover:!text-blue-600 hover:!border-blue-300 transition-all">
           AI 草稿
         </el-button>
+        <el-button
+          v-if="isEdit"
+          size="large"
+          @click="openVersionDrawer"
+          class="!border-gray-200 hover:!bg-gray-50 hover:!text-orange-600 hover:!border-orange-300 transition-all"
+        >
+          历史版本
+        </el-button>
         <el-dropdown trigger="click" @command="handleExport">
           <el-button size="large" circle class="!border-gray-200 hover:!bg-gray-50 hover:!text-green-600 hover:!border-green-300 transition-all">
             <el-icon><Download /></el-icon>
@@ -309,6 +317,27 @@
     </el-dialog>
 
     <ResourceManager ref="resourceManagerRef" @select="handleResourceSelect" />
+
+    <el-drawer v-model="showVersionDrawer" title="历史版本" size="420px">
+      <div v-loading="versionLoading">
+        <el-empty v-if="!versionLoading && versions.length === 0" description="暂无历史版本" />
+        <div v-else class="space-y-2">
+          <div
+            v-for="item in versions"
+            :key="item.id"
+            class="rounded border border-gray-100 px-3 py-3"
+          >
+            <div class="text-sm font-medium text-gray-700 line-clamp-1">{{ item.title }}</div>
+            <div class="text-xs text-gray-400 mt-1">版本ID: {{ item.id }} | 时间: {{ formatVersionTime(item.created_at) }}</div>
+            <div class="mt-2">
+              <el-button size="small" type="warning" :loading="versionRestoringId === item.id" @click="handleRestoreVersion(item.id)">
+                回滚到此版本
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -339,6 +368,10 @@ const editorRef = ref<HTMLTextAreaElement | null>(null)
 const showAIDrawer = ref(false)
 const aiGenerating = ref(false)
 const aiSummaryLoading = ref(false)
+const showVersionDrawer = ref(false)
+const versionLoading = ref(false)
+const versionRestoringId = ref<number | null>(null)
+const versions = ref<any[]>([])
 const aiKeywordsInput = ref('')
 const aiOutlineInput = ref('')
 const aiForm = ref({
@@ -671,6 +704,70 @@ const handleGenerateSummary = async () => {
     ElMessage.error(getApiErrorMessage(error, 'AI 摘要生成异常'))
   } finally {
     aiSummaryLoading.value = false
+  }
+}
+
+const formatVersionTime = (dateStr: string) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN')
+}
+
+const openVersionDrawer = async () => {
+  if (!isEdit.value) return
+  showVersionDrawer.value = true
+  versionLoading.value = true
+  try {
+    const res: any = await api.getArticleVersions(Number(route.params.id))
+    versions.value = res.code === 200 ? (res.data || []) : []
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('获取历史版本失败')
+  } finally {
+    versionLoading.value = false
+  }
+}
+
+const handleRestoreVersion = async (versionId: number) => {
+  if (!isEdit.value) return
+  versionRestoringId.value = versionId
+  try {
+    const res: any = await api.restoreArticleVersion(Number(route.params.id), versionId)
+    if (res.code === 200) {
+      ElMessage.success('版本回滚成功，已刷新编辑器内容')
+      const articleRes: any = await api.getArticle(Number(route.params.id))
+      if (articleRes.code === 200) {
+        const article = articleRes.data
+        form.value = {
+          title: article.title,
+          slug: article.slug || '',
+          summary: article.summary || '',
+          content: article.content,
+          cover: article.cover || '',
+          seo_title: article.seo_title || '',
+          seo_description: article.seo_description || '',
+          seo_keywords: article.seo_keywords || '',
+          category_id: article.category_id,
+          tag_ids: article.tags ? article.tags.map((t: any) => t.id) : [],
+          is_published: article.is_published,
+          is_hidden: article.is_hidden || false,
+          visibility: article.visibility || 'public',
+          is_top: article.is_top,
+          is_recommend: article.is_recommend,
+          is_protected: article.is_protected || false,
+          protection_question: article.protection_question || '',
+          protection_answer: article.protection_answer || ''
+        }
+      }
+      await openVersionDrawer()
+    } else {
+      ElMessage.error(res.msg || '版本回滚失败')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('版本回滚失败')
+  } finally {
+    versionRestoringId.value = null
   }
 }
 
