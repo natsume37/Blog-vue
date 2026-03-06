@@ -169,15 +169,6 @@ const getStatusType = (statusCode?: number) => {
 
 const toMs = (seconds?: number) => (Number(seconds || 0) * 1000).toFixed(2)
 
-const normalizeMapName = (name: string) =>
-  name
-    .replace('省', '')
-    .replace('市', '')
-    .replace('自治区', '')
-    .replace('维吾尔', '')
-    .replace('回族', '')
-    .replace('壮族', '')
-
 const setMapOption = (data: Array<{ name: string; value: number }>) => {
   if (!chartInstance) return
   const maxValue = Math.max(10, ...data.map(item => Number(item.value || 0)))
@@ -228,7 +219,7 @@ const refreshMapStats = async () => {
     const rawData = Array.isArray(res?.data) ? res.data : []
     const data = rawData
       .map((item: any) => ({
-        name: normalizeMapName(String(item?.name || '')),
+        name: String(item?.name || ''),
         value: Number(item?.value || 0)
       }))
       .filter((item: { name: string; value: number }) => item.name)
