@@ -1,6 +1,7 @@
 import request from './request'
 export { generateArticleDraft } from './ai'
 export { generateArticleSummary } from './ai'
+export { getAIConfig, updateAIConfig } from './ai'
 
 // Auth
 export const login = (data: any) => request.post('/auth/login', data)

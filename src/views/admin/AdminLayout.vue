@@ -178,6 +178,7 @@ const menuItems = [
   { path: '/admin/monitor', label: '服务器监控', icon: Monitor },
   { path: '/admin/visits', label: '访问记录', icon: DataLine },
   { path: '/admin/settings', label: '站点设置', icon: Setting },
+  { path: '/admin/ai-settings', label: 'AI 配置', icon: Setting },
   { path: '/admin/changelogs', label: '建站日志', icon: Timer }
 ]
 

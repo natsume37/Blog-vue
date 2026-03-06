@@ -95,6 +95,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../views/admin/SiteSettings.vue')
       },
       {
+        path: 'ai-settings',
+        name: 'AdminAISettings',
+        component: () => import('../views/admin/AISettings.vue')
+      },
+      {
         path: 'changelogs',
         name: 'AdminChangelogs',
         component: () => import('../views/admin/ChangelogManage.vue')

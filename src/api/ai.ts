@@ -18,3 +18,14 @@ export const generateArticleSummary = (data: {
   max_length?: number
   style?: string
 }) => request.post('/ai/article-summary', data)
+
+export const getAIConfig = () => request.get('/ai/config')
+
+export const updateAIConfig = (data: {
+  ai_enabled: boolean
+  ai_provider: string
+  ai_base_url: string
+  ai_api_key: string
+  ai_model: string
+  ai_timeout_seconds: number
+}) => request.put('/ai/config', data)
