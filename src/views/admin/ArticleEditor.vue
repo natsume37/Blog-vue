@@ -566,6 +566,11 @@ const normalizeListInput = (value: string) =>
     .map(item => item.trim())
     .filter(Boolean)
 
+const getApiErrorMessage = (error: any, fallback: string) => {
+  const msg = error?.response?.data?.msg || error?.response?.data?.detail || error?.message
+  return msg || fallback
+}
+
 const applySuggestedTags = (tagNames: string[]) => {
   if (!Array.isArray(tagNames) || tagNames.length === 0) return
   const map = new Map(tags.value.map((t: any) => [String(t.name).toLowerCase(), t.id]))
@@ -603,7 +608,7 @@ const handleGenerateDraft = async () => {
     ElMessage.success(`草稿已生成（${res.data.provider}/${res.data.model}）`)
   } catch (error) {
     console.error(error)
-    ElMessage.error('AI 生成异常')
+    ElMessage.error(getApiErrorMessage(error, 'AI 生成异常'))
   } finally {
     aiGenerating.value = false
   }
@@ -632,7 +637,7 @@ const handleGenerateSummary = async () => {
     ElMessage.success(`摘要已生成（${res.data.provider}/${res.data.model}）`)
   } catch (error) {
     console.error(error)
-    ElMessage.error('AI 摘要生成异常')
+    ElMessage.error(getApiErrorMessage(error, 'AI 摘要生成异常'))
   } finally {
     aiSummaryLoading.value = false
   }

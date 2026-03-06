@@ -2,7 +2,10 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <h2 class="text-2xl font-bold text-gray-800">AI 配置</h2>
-      <el-button type="primary" :loading="saving" @click="saveConfig">保存配置</el-button>
+      <div class="flex items-center gap-2">
+        <el-button :loading="testing" @click="handleTestAI">AI 一键测试</el-button>
+        <el-button type="primary" :loading="saving" @click="saveConfig">保存配置</el-button>
+      </div>
     </div>
 
     <el-card v-loading="loading">
@@ -48,7 +51,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getAIConfig, updateAIConfig } from '../../api'
+import { getAIConfig, testAIConfig, updateAIConfig } from '../../api'
 
 type AIConfigForm = {
   ai_enabled: boolean
@@ -61,6 +64,7 @@ type AIConfigForm = {
 
 const loading = ref(false)
 const saving = ref(false)
+const testing = ref(false)
 const form = ref<AIConfigForm>({
   ai_enabled: true,
   ai_provider: 'openai-compatible',
@@ -130,6 +134,31 @@ const saveConfig = async () => {
     ElMessage.error('保存失败')
   } finally {
     saving.value = false
+  }
+}
+
+const handleTestAI = async () => {
+  testing.value = true
+  try {
+    const payload: AIConfigForm = {
+      ...form.value,
+      ai_provider: form.value.ai_provider.trim(),
+      ai_base_url: form.value.ai_base_url.trim(),
+      ai_api_key: form.value.ai_api_key.trim(),
+      ai_model: form.value.ai_model.trim(),
+      ai_timeout_seconds: Math.max(1, Number(form.value.ai_timeout_seconds || 30))
+    }
+    const res: any = await testAIConfig(payload)
+    if (res.code === 200 && res.data?.ok) {
+      ElMessage.success(`测试通过：${res.data.provider}/${res.data.model}，耗时 ${res.data.latency_ms}ms`)
+      return
+    }
+    ElMessage.error(res.msg || res.data?.message || '测试失败')
+  } catch (error: any) {
+    const msg = error?.response?.data?.msg || error?.message || '测试失败'
+    ElMessage.error(msg)
+  } finally {
+    testing.value = false
   }
 }
 
