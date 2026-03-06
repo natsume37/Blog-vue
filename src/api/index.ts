@@ -48,6 +48,8 @@ export const createMessage = (data: any) => request.post('/messages', data)
 export const getSiteInfo = () => request.get('/site/info')
 export const getSiteConfig = () => request.get('/site/config')
 export const updateSiteConfig = (data: any) => request.put('/site/config', data)
+export const getCommentRiskConfig = () => request.get('/site/comment-risk-config')
+export const updateCommentRiskConfig = (data: any) => request.put('/site/comment-risk-config', data)
 
 // Changelog
 export const getChangelogs = () => request.get('/changelogs')

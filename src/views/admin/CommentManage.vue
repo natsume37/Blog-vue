@@ -113,6 +113,37 @@
         />
       </div>
     </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">评论风控配置</h3>
+        <el-button type="primary" @click="saveRiskConfig" :loading="riskSaving">保存配置</el-button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div class="text-sm text-gray-600 mb-2">敏感词列表（每行一个）</div>
+          <el-input
+            v-model="sensitiveWordsText"
+            type="textarea"
+            :rows="8"
+            placeholder="如：赌博&#10;色情&#10;违禁词"
+          />
+        </div>
+        <div>
+          <div class="text-sm text-gray-600 mb-2">IP 黑名单（每行一个）</div>
+          <el-input
+            v-model="blockedIpsText"
+            type="textarea"
+            :rows="8"
+            placeholder="如：1.2.3.4&#10;121.40.127.17"
+          />
+        </div>
+      </div>
+      <div class="mt-4">
+        <el-switch v-model="autoRejectEnabled" />
+        <span class="ml-2 text-sm text-gray-600">命中敏感词时自动置为待审核</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -132,6 +163,10 @@ const filterStatus = ref<boolean | null>(null)
 const keyword = ref('')
 const quickFilter = ref<'all' | 'pending'>('all')
 const stats = ref({ total: 0, approved: 0, pending: 0 })
+const sensitiveWordsText = ref('')
+const blockedIpsText = ref('')
+const autoRejectEnabled = ref(false)
+const riskSaving = ref(false)
 
 const fetchComments = async () => {
   loading.value = true
@@ -171,6 +206,48 @@ const fetchStats = async () => {
     }
   } catch (error) {
     console.error(error)
+  }
+}
+
+const fetchRiskConfig = async () => {
+  try {
+    const res: any = await api.getCommentRiskConfig()
+    if (res.code === 200 && res.data) {
+      sensitiveWordsText.value = (res.data.sensitiveWords || []).join('\n')
+      blockedIpsText.value = (res.data.blockedIps || []).join('\n')
+      autoRejectEnabled.value = !!res.data.autoRejectEnabled
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const saveRiskConfig = async () => {
+  riskSaving.value = true
+  try {
+    const sensitiveWords = sensitiveWordsText.value
+      .split('\n')
+      .map((x) => x.trim())
+      .filter(Boolean)
+    const blockedIps = blockedIpsText.value
+      .split('\n')
+      .map((x) => x.trim())
+      .filter(Boolean)
+    const res: any = await api.updateCommentRiskConfig({
+      sensitiveWords,
+      blockedIps,
+      autoRejectEnabled: autoRejectEnabled.value
+    })
+    if (res.code === 200) {
+      ElMessage.success('风控配置已保存')
+    } else {
+      ElMessage.error(res.msg || '保存失败')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('保存失败')
+  } finally {
+    riskSaving.value = false
   }
 }
 
@@ -252,5 +329,6 @@ const formatTime = (dateStr: string) => {
 onMounted(() => {
   fetchStats()
   fetchComments()
+  fetchRiskConfig()
 })
 </script>
