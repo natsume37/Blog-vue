@@ -38,6 +38,7 @@
           :selected-ids="selectedId ? [selectedId] : []"
           @select="handleSelect"
           @delete="handleDelete"
+          @view-refs="handleViewRefs"
           @image-error="handleImageError"
         />
       </div>
@@ -127,6 +128,20 @@ const handleDelete = async (item: ResourceItem) => {
 
 const handleImageError = async (_event: Event, item: ResourceItem) => {
   await store.refreshItemUrl(item)
+}
+
+const handleViewRefs = async (item: ResourceItem) => {
+  try {
+    const res: any = await store.getReferences(item.id)
+    const refs = res?.data?.article_refs || []
+    if (!refs.length) {
+      ElMessage.info('该资源暂无文章引用')
+      return
+    }
+    ElMessage.info(`该资源被 ${refs.length} 篇文章引用`)
+  } catch {
+    ElMessage.error('查询引用失败')
+  }
 }
 
 const handleUpload = async (file: any) => {

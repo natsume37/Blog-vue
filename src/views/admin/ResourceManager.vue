@@ -55,6 +55,7 @@
         :selected-ids="selectedIds"
         @select="handleSelect"
         @delete="handleDelete"
+        @view-refs="handleViewReferences"
         @image-error="handleImageError"
       />
     </div>
@@ -71,11 +72,34 @@
         @size-change="handleSizeChange"
       />
     </div>
+
+    <el-drawer
+      v-model="refDrawerVisible"
+      title="资源引用详情"
+      size="460px"
+      :with-header="true"
+    >
+      <div class="text-sm text-gray-500 mb-3">资源：{{ refResourceName }}</div>
+      <div v-loading="refLoading">
+        <el-empty v-if="!refLoading && refArticles.length === 0" description="暂无文章引用" />
+        <div v-else class="space-y-2">
+          <div
+            v-for="article in refArticles"
+            :key="article.id"
+            class="flex items-center justify-between rounded border border-gray-100 px-3 py-2"
+          >
+            <div class="truncate text-sm text-gray-700">{{ article.title }}</div>
+            <el-button link type="primary" @click="goEditArticle(article.id)">编辑</el-button>
+          </div>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { Upload, RefreshRight } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useResourceStore, type ResourceItem } from '../../stores/resource'
@@ -83,6 +107,7 @@ import { uploadToQiniu } from '../../utils/upload'
 import ResourceGrid from '../../components/ResourceGrid.vue'
 
 const store = useResourceStore()
+const router = useRouter()
 
 const filterType = ref('')
 const selectedIds = ref<number[]>([])
@@ -90,6 +115,10 @@ const currentPage = ref(1)
 const currentPageSize = ref(24)
 const keyword = ref('')
 const syncing = ref(false)
+const refDrawerVisible = ref(false)
+const refLoading = ref(false)
+const refResourceName = ref('')
+const refArticles = ref<{ id: number; title: string }[]>([])
 
 // 同步 store 的分页状态
 watch(() => store.page, (val) => { currentPage.value = val })
@@ -186,6 +215,25 @@ const handleSyncQiniu = async () => {
 
 const handleImageError = async (_event: Event, item: ResourceItem) => {
   await store.refreshItemUrl(item)
+}
+
+const handleViewReferences = async (item: ResourceItem) => {
+  refDrawerVisible.value = true
+  refLoading.value = true
+  refResourceName.value = item.filename
+  refArticles.value = []
+  try {
+    const res: any = await store.getReferences(item.id)
+    refArticles.value = res?.data?.article_refs || []
+  } catch {
+    ElMessage.error('加载引用详情失败')
+  } finally {
+    refLoading.value = false
+  }
+}
+
+const goEditArticle = (id: number) => {
+  router.push(`/admin/articles/${id}`)
 }
 
 const handleUpload = async (file: any) => {

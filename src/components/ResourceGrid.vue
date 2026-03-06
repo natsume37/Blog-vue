@@ -52,6 +52,13 @@
         
         <!-- 悬浮操作按钮 -->
         <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 z-10">
+          <button
+            class="w-6 h-6 rounded bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-amber-500"
+            @click.stop="$emit('view-refs', item)"
+            title="查看引用"
+          >
+            <el-icon :size="12"><DocumentCopy /></el-icon>
+          </button>
           <button 
             class="w-6 h-6 rounded bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-sky-500"
             @click.stop="copyLink(item)"
@@ -85,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { Loading, VideoPlay, Headset, Document, Check, Link, Picture, Delete } from '@element-plus/icons-vue'
+import { Loading, VideoPlay, Headset, Document, Check, Link, Picture, Delete, DocumentCopy } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { ResourceItem } from '../stores/resource'
 
@@ -97,6 +104,7 @@ defineProps<{
 defineEmits<{
   select: [item: ResourceItem]
   delete: [item: ResourceItem]
+  'view-refs': [item: ResourceItem]
   'image-error': [event: Event, item: ResourceItem]
 }>()
 
