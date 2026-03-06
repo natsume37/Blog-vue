@@ -25,12 +25,22 @@
           <el-radio-button label="recycle">回收站</el-radio-button>
         </el-radio-group>
       </div>
+      <div class="px-4 py-3 flex flex-wrap items-center gap-2 border-b border-gray-100">
+        <span class="text-xs text-gray-500">已选 {{ selectedIds.length }} 篇</span>
+        <el-button size="small" @click="handleBatch('publish')" :disabled="!selectedIds.length">批量发布</el-button>
+        <el-button size="small" @click="handleBatch('unpublish')" :disabled="!selectedIds.length">批量下线</el-button>
+        <el-button size="small" @click="handleBatch('recycle')" :disabled="!selectedIds.length">移入回收站</el-button>
+        <el-button size="small" @click="handleBatch('restore')" :disabled="!selectedIds.length">恢复</el-button>
+        <el-button size="small" type="danger" plain @click="handleBatch('delete')" :disabled="!selectedIds.length">批量删除</el-button>
+      </div>
       <el-table 
         :data="articles" 
         style="width: 100%" 
         v-loading="loading"
+        @selection-change="handleSelectionChange"
         :header-cell-style="{ background: '#f9fafb', color: '#374151', fontWeight: '600' }"
       >
+        <el-table-column type="selection" width="50" />
         <el-table-column prop="title" label="标题" min-width="240">
           <template #default="{ row }">
             <div class="py-2">
@@ -122,6 +132,9 @@
               <el-button circle size="small" @click="$router.push(`/admin/articles/${row.id}`)">
                 <el-icon><Edit /></el-icon>
               </el-button>
+              <el-button circle size="small" @click="handleDuplicate(row)">
+                <el-icon><CopyDocument /></el-icon>
+              </el-button>
               <el-button circle size="small" type="danger" plain @click="handleDelete(row)">
                 <el-icon><Delete /></el-icon>
               </el-button>
@@ -148,7 +161,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Plus, View, ChatDotSquare, Star, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, View, ChatDotSquare, Star, Edit, Delete, CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as api from '../../api'
 
@@ -158,6 +171,7 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const statusFilter = ref<'all' | 'draft' | 'recycle'>('all')
+const selectedIds = ref<number[]>([])
 
 const fetchArticles = async () => {
   loading.value = true
@@ -180,7 +194,12 @@ const fetchArticles = async () => {
 
 const handleFilterChange = () => {
   currentPage.value = 1
+  selectedIds.value = []
   fetchArticles()
+}
+
+const handleSelectionChange = (rows: any[]) => {
+  selectedIds.value = rows.map((row) => row.id)
 }
 
 const handleStatusChange = async (row: any, field: string) => {
@@ -222,6 +241,54 @@ const handleDelete = (row: any) => {
       console.error(error)
     }
   })
+}
+
+const handleDuplicate = async (row: any) => {
+  try {
+    const res: any = await api.duplicateArticle(row.id)
+    if (res.code === 200) {
+      ElMessage.success('复制成功')
+      fetchArticles()
+    } else {
+      ElMessage.error(res.msg || '复制失败')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('复制失败')
+  }
+}
+
+const handleBatch = (action: 'publish' | 'unpublish' | 'recycle' | 'restore' | 'delete') => {
+  const actionLabelMap: Record<string, string> = {
+    publish: '批量发布',
+    unpublish: '批量下线',
+    recycle: '移入回收站',
+    restore: '恢复文章',
+    delete: '永久删除'
+  }
+  ElMessageBox.confirm(
+    `确定要执行“${actionLabelMap[action]}”吗？`,
+    '批量操作确认',
+    {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      const res: any = await api.batchOperateArticles({ ids: selectedIds.value, action })
+      if (res.code === 200) {
+        ElMessage.success(res.msg || '操作成功')
+        selectedIds.value = []
+        fetchArticles()
+      } else {
+        ElMessage.error(res.msg || '操作失败')
+      }
+    } catch (error) {
+      console.error(error)
+      ElMessage.error('操作失败')
+    }
+  }).catch(() => {})
 }
 
 onMounted(() => {

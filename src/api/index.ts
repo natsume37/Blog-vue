@@ -21,6 +21,8 @@ export const getArticle = (id: number, params?: any) => request.get(`/articles/$
 export const createArticle = (data: any) => request.post('/articles', data)
 export const updateArticle = (id: number, data: any) => request.put(`/articles/${id}`, data)
 export const deleteArticle = (id: number) => request.delete(`/articles/${id}`)
+export const duplicateArticle = (id: number) => request.post(`/articles/${id}/duplicate`)
+export const batchOperateArticles = (data: { ids: number[]; action: string }) => request.post('/articles/admin/batch', data)
 export const likeArticle = (id: number) => request.post(`/articles/${id}/like`)
 export const unlikeArticle = (id: number) => request.delete(`/articles/${id}/like`)
 export const getArticleLikeStatus = (id: number) => request.get(`/articles/${id}/like/status`)
