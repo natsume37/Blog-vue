@@ -4,13 +4,41 @@
  */
 
 // API 配置
-const envApiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
-const normalizedApiBase = envApiBase && envApiBase.length > 0 ? envApiBase : '/api/v1'
+const DEFAULT_API_BASE = '/api/v1'
+
+const normalizeApiBase = (raw?: string) => {
+  const value = (raw || '').trim()
+  if (!value) return DEFAULT_API_BASE
+
+  // 只接受完整 URL 或以 / 开头的相对路径，避免出现 https://domain/127.0.0.1:8090 这种拼接错误
+  const isAbsUrl = /^https?:\/\//i.test(value)
+  const isRelativePath = value.startsWith('/')
+  if (!isAbsUrl && !isRelativePath) return DEFAULT_API_BASE
+
+  let next = value.replace(/\/+$/, '')
+
+  // 项目后端统一走 /api/v1，若误配为 /api 自动补齐版本
+  if (/\/api$/i.test(next)) {
+    next = `${next}/v1`
+  }
+
+  // 线上页面如果误配 localhost/127.0.0.1，浏览器会请求用户本机，直接回退同域代理
+  if (
+    isAbsUrl &&
+    /:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(next) &&
+    typeof window !== 'undefined' &&
+    !['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ) {
+    return DEFAULT_API_BASE
+  }
+
+  return next || DEFAULT_API_BASE
+}
 
 export const apiConfig = {
   // 后端 API 基础地址
-  // 兜底为同域反向代理，避免 CI Secret 空值导致登录接口失效
-  baseURL: normalizedApiBase,
+  // 兜底为同域反向代理，避免 CI/环境变量误配导致接口失效
+  baseURL: normalizeApiBase(import.meta.env.VITE_API_BASE_URL as string | undefined),
   // 请求超时时间（毫秒）
   timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000,
 }
