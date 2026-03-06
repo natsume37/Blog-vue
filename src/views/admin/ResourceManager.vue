@@ -6,13 +6,30 @@
         <h2 class="text-lg font-bold text-gray-700">图库管理</h2>
         <el-radio-group v-model="filterType" size="small" @change="handleFilterChange">
           <el-radio-button label="">全部</el-radio-button>
-          <el-radio-button label="image">图片</el-radio-button>
+          <el-radio-button label="img">图片</el-radio-button>
           <el-radio-button label="video">视频</el-radio-button>
           <el-radio-button label="audio">音频</el-radio-button>
         </el-radio-group>
+        <el-input
+          v-model="keyword"
+          placeholder="搜索文件名或 key"
+          clearable
+          style="width: 220px"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+        />
       </div>
       
       <div class="flex gap-2">
+        <el-button @click="handleSearch">
+          搜索
+        </el-button>
+        <el-button @click="handleSyncQiniu" :loading="syncing">
+          同步七牛
+        </el-button>
+        <el-button type="danger" plain :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+          批量删除({{ selectedIds.length }})
+        </el-button>
         <el-button @click="store.fetchData()" :loading="store.loading" circle>
           <el-icon><RefreshRight /></el-icon>
         </el-button>
@@ -35,7 +52,7 @@
     <div class="flex-1 overflow-y-auto bg-white rounded-lg shadow-sm" v-loading="store.loading">
       <ResourceGrid 
         :items="store.items" 
-        :selected-id="selectedId"
+        :selected-ids="selectedIds"
         @select="handleSelect"
         @delete="handleDelete"
         @image-error="handleImageError"
@@ -68,9 +85,11 @@ import ResourceGrid from '../../components/ResourceGrid.vue'
 const store = useResourceStore()
 
 const filterType = ref('')
-const selectedId = ref<number | null>(null)
+const selectedIds = ref<number[]>([])
 const currentPage = ref(1)
 const currentPageSize = ref(24)
+const keyword = ref('')
+const syncing = ref(false)
 
 // 同步 store 的分页状态
 watch(() => store.page, (val) => { currentPage.value = val })
@@ -85,6 +104,10 @@ const handleFilterChange = () => {
   store.setFilter(filterType.value)
 }
 
+const handleSearch = () => {
+  store.setKeyword(keyword.value.trim())
+}
+
 const handlePageChange = (page: number) => {
   store.setPage(page)
 }
@@ -94,7 +117,11 @@ const handleSizeChange = (size: number) => {
 }
 
 const handleSelect = (item: ResourceItem) => {
-  selectedId.value = selectedId.value === item.id ? null : item.id
+  if (selectedIds.value.includes(item.id)) {
+    selectedIds.value = selectedIds.value.filter((id) => id !== item.id)
+  } else {
+    selectedIds.value = [...selectedIds.value, item.id]
+  }
 }
 
 const handleDelete = async (item: ResourceItem) => {
@@ -106,13 +133,40 @@ const handleDelete = async (item: ResourceItem) => {
     })
     await store.removeResource(item.id)
     ElMessage.success('删除成功')
-    if (selectedId.value === item.id) {
-      selectedId.value = null
-    }
+    selectedIds.value = selectedIds.value.filter((id) => id !== item.id)
   } catch (e: any) {
     if (e !== 'cancel') {
       ElMessage.error('删除失败')
     }
+  }
+}
+
+const handleBatchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除选中的 ${selectedIds.value.length} 个资源吗？此操作将同步删除七牛文件。`,
+      '批量删除确认',
+      { type: 'warning' }
+    )
+    await store.removeResources(selectedIds.value)
+    ElMessage.success('批量删除成功')
+    selectedIds.value = []
+  } catch (e: any) {
+    if (e !== 'cancel') {
+      ElMessage.error('批量删除失败')
+    }
+  }
+}
+
+const handleSyncQiniu = async () => {
+  syncing.value = true
+  try {
+    const res: any = await store.syncQiniu('', 1000)
+    ElMessage.success(res?.msg || '同步完成')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.msg || '同步失败')
+  } finally {
+    syncing.value = false
   }
 }
 

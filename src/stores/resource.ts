@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getResources, deleteResource } from '../api/resource'
+import { getResources, deleteResource, batchDeleteResource, syncResourcesFromQiniu } from '../api/resource'
 import { getBatchPrivateUrls, getPrivateUrl } from '../api'
 import { ElMessage } from 'element-plus'
 
@@ -26,6 +26,7 @@ export const useResourceStore = defineStore('resource', () => {
   const page = ref(1)
   const pageSize = ref(24)
   const filterType = ref('')
+  const keyword = ref('')
   const loading = ref(false)
   
   // 私有链接缓存
@@ -105,7 +106,8 @@ export const useResourceStore = defineStore('resource', () => {
       const res: any = await getResources({
         current: page.value,
         size: pageSize.value,
-        type: filterType.value === '' ? undefined : (filterType.value === 'image' ? 'img' : filterType.value)
+        type: filterType.value || undefined,
+        keyword: keyword.value || undefined
       })
       if (res.code === 200) {
         const records = res.data.records || []
@@ -130,6 +132,17 @@ export const useResourceStore = defineStore('resource', () => {
   const removeResource = async (id: number) => {
     await deleteResource(id)
     await fetchData()
+  }
+
+  const removeResources = async (ids: number[]) => {
+    await batchDeleteResource(ids)
+    await fetchData()
+  }
+
+  const syncQiniu = async (prefix = '', limit = 1000) => {
+    const res: any = await syncResourcesFromQiniu({ prefix, limit })
+    await fetchData()
+    return res
   }
 
   // 刷新单个资源的URL
@@ -165,20 +178,30 @@ export const useResourceStore = defineStore('resource', () => {
     fetchData()
   }
 
+  const setKeyword = (value: string) => {
+    keyword.value = value
+    page.value = 1
+    fetchData()
+  }
+
   return {
     items,
     total,
     page,
     pageSize,
     filterType,
+    keyword,
     loading,
     version,
     fetchData,
     removeResource,
+    removeResources,
+    syncQiniu,
     refreshItemUrl,
     setFilter,
     setPage,
     setPageSize,
+    setKeyword,
     getDisplayUrl
   }
 })

@@ -4,7 +4,7 @@
       v-for="item in items" 
       :key="item.id" 
       class="group relative bg-white rounded-lg overflow-hidden cursor-pointer border border-gray-100 hover:border-sky-300 hover:shadow-md transition-all duration-200"
-      :class="selectedId === item.id ? 'ring-2 ring-sky-400 border-sky-400' : ''"
+      :class="selectedIds.includes(item.id) ? 'ring-2 ring-sky-400 border-sky-400' : ''"
       @click="$emit('select', item)"
     >
       <!-- 图片容器 - 使用 1:1 正方形 -->
@@ -46,7 +46,7 @@
         </template>
         
         <!-- 选中标记 -->
-        <div v-if="selectedId === item.id" class="absolute top-1.5 left-1.5 bg-sky-500 text-white rounded-full p-1 shadow z-10">
+        <div v-if="selectedIds.includes(item.id)" class="absolute top-1.5 left-1.5 bg-sky-500 text-white rounded-full p-1 shadow z-10">
           <el-icon :size="10"><Check /></el-icon>
         </div>
         
@@ -91,7 +91,7 @@ import type { ResourceItem } from '../stores/resource'
 
 defineProps<{
   items: ResourceItem[]
-  selectedId: number | null
+  selectedIds: number[]
 }>()
 
 defineEmits<{

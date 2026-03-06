@@ -13,7 +13,7 @@
       <div class="flex justify-between items-center mb-3 px-1">
         <el-radio-group v-model="localFilter" size="small" @change="handleFilterChange">
           <el-radio-button label="">全部</el-radio-button>
-          <el-radio-button label="image">图片</el-radio-button>
+          <el-radio-button label="img">图片</el-radio-button>
           <el-radio-button label="video">视频</el-radio-button>
           <el-radio-button label="audio">音频</el-radio-button>
         </el-radio-group>
@@ -35,7 +35,7 @@
       <div class="flex-1 overflow-y-auto bg-gray-50 rounded-lg" v-loading="store.loading">
         <ResourceGrid 
           :items="store.items" 
-          :selected-id="selectedId"
+          :selected-ids="selectedId ? [selectedId] : []"
           @select="handleSelect"
           @delete="handleDelete"
           @image-error="handleImageError"
@@ -154,7 +154,7 @@ const confirmSelect = () => {
 
 // 暴露打开方法
 const open = (type?: string) => {
-  if (type === 'image') localFilter.value = 'image'
+  if (type === 'image') localFilter.value = 'img'
   else if (type === 'video') localFilter.value = 'video'
   else localFilter.value = ''
   

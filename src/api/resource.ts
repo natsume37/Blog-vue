@@ -33,3 +33,19 @@ export const deleteResource = (id: number) => {
     method: 'delete'
   })
 }
+
+export const batchDeleteResource = (ids: number[]) => {
+  return request({
+    url: '/resources/admin/batch-delete',
+    method: 'post',
+    data: { ids }
+  })
+}
+
+export const syncResourcesFromQiniu = (data: { prefix?: string; limit?: number }) => {
+  return request({
+    url: '/resources/admin/sync-qiniu',
+    method: 'post',
+    data
+  })
+}
