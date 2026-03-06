@@ -9,6 +9,9 @@
         class="text-3xl font-bold text-gray-800 placeholder-gray-300 border-none outline-none flex-grow mr-8 bg-transparent transition-all duration-300 focus:placeholder-gray-400"
       />
       <div class="flex gap-4">
+        <el-button size="large" @click="showAIDrawer = true" class="!border-gray-200 hover:!bg-gray-50 hover:!text-blue-600 hover:!border-blue-300 transition-all">
+          AI 草稿
+        </el-button>
         <el-dropdown trigger="click" @command="handleExport">
           <el-button size="large" circle class="!border-gray-200 hover:!bg-gray-50 hover:!text-green-600 hover:!border-green-300 transition-all">
             <el-icon><Download /></el-icon>
@@ -189,6 +192,37 @@
       </el-form>
     </el-drawer>
 
+    <el-drawer v-model="showAIDrawer" title="AI 草稿生成" size="460px">
+      <el-form label-position="top">
+        <el-form-item label="主题">
+          <el-input v-model="aiForm.topic" placeholder="例如：Vue3 项目组件化重构实践" />
+        </el-form-item>
+        <el-form-item label="关键词">
+          <el-input v-model="aiKeywordsInput" placeholder="用逗号分隔，例如：Vue3, 组件化, 可拓展性" />
+        </el-form-item>
+        <el-form-item label="大纲（每行一条）">
+          <el-input v-model="aiOutlineInput" type="textarea" :rows="5" placeholder="背景&#10;设计目标&#10;实现路径&#10;总结" />
+        </el-form-item>
+        <div class="grid grid-cols-2 gap-3">
+          <el-form-item label="风格">
+            <el-input v-model="aiForm.style" />
+          </el-form-item>
+          <el-form-item label="语气">
+            <el-input v-model="aiForm.tone" />
+          </el-form-item>
+        </div>
+        <el-form-item label="目标字数">
+          <el-input-number v-model="aiForm.target_words" :min="200" :max="5000" :step="100" class="w-full" />
+        </el-form-item>
+        <el-form-item label="已有上下文（可选）">
+          <el-input v-model="aiForm.existing_context" type="textarea" :rows="4" />
+        </el-form-item>
+        <div class="mt-4">
+          <el-button type="primary" :loading="aiGenerating" @click="handleGenerateDraft">生成草稿并填充编辑器</el-button>
+        </div>
+      </el-form>
+    </el-drawer>
+
     <!-- Image Selector Dialog -->
     <el-dialog v-model="showImageSelector" title="选择图片" width="500px">
       <div v-if="contentImages.length > 0" class="grid grid-cols-3 gap-4">
@@ -276,6 +310,19 @@ const submitting = ref(false)
 const showSettings = ref(false)
 const viewMode = ref('split') // edit, split, preview
 const editorRef = ref<HTMLTextAreaElement | null>(null)
+const showAIDrawer = ref(false)
+const aiGenerating = ref(false)
+const aiKeywordsInput = ref('')
+const aiOutlineInput = ref('')
+const aiForm = ref({
+  topic: '',
+  style: '技术博客',
+  tone: '专业且易懂',
+  language: 'zh-CN',
+  target_words: 1200,
+  include_summary: true,
+  existing_context: ''
+})
 
 // Form Data
 const form = ref<{
@@ -504,6 +551,55 @@ const handleSubmit = async () => {
     ElMessage.error('操作异常')
   } finally {
     submitting.value = false
+  }
+}
+
+const normalizeListInput = (value: string) =>
+  value
+    .split(/[\n,，]/g)
+    .map(item => item.trim())
+    .filter(Boolean)
+
+const applySuggestedTags = (tagNames: string[]) => {
+  if (!Array.isArray(tagNames) || tagNames.length === 0) return
+  const map = new Map(tags.value.map((t: any) => [String(t.name).toLowerCase(), t.id]))
+  const next = new Set<number>(form.value.tag_ids)
+  tagNames.forEach(name => {
+    const id = map.get(String(name).toLowerCase())
+    if (id) next.add(id)
+  })
+  form.value.tag_ids = Array.from(next)
+}
+
+const handleGenerateDraft = async () => {
+  if (!aiForm.value.topic.trim()) {
+    ElMessage.warning('请先输入主题')
+    return
+  }
+
+  aiGenerating.value = true
+  try {
+    const payload = {
+      ...aiForm.value,
+      keywords: normalizeListInput(aiKeywordsInput.value),
+      outline: normalizeListInput(aiOutlineInput.value)
+    }
+    const res: any = await api.generateArticleDraft(payload)
+    if (res.code !== 200 || !res.data) {
+      ElMessage.error(res.msg || '生成失败')
+      return
+    }
+    form.value.title = res.data.title || form.value.title
+    form.value.summary = res.data.summary || form.value.summary
+    form.value.content = res.data.content_markdown || form.value.content
+    applySuggestedTags(res.data.tags_suggestion || [])
+    showAIDrawer.value = false
+    ElMessage.success(`草稿已生成（${res.data.provider}/${res.data.model}）`)
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('AI 生成异常')
+  } finally {
+    aiGenerating.value = false
   }
 }
 

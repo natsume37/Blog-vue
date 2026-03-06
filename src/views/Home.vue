@@ -37,7 +37,7 @@
           <ProfileCard :stats="siteStats" />
           
           <!-- Admin: Write Article Button -->
-          <div v-if="userStore.isAdmin" class="panel-card bg-white rounded-xl shadow-sm p-4 border border-gray-100 animate-fade-in-up">
+          <UiCard v-if="userStore.isAdmin" class="panel-card animate-fade-in-up">
             <router-link 
               to="/admin/articles/new"
               class="btn-shine w-full flex items-center justify-center gap-2 bg-gradient-to-r from-miyazaki-blue to-blue-400 text-white py-3 rounded-lg font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
@@ -45,10 +45,10 @@
               <el-icon class="group-hover:rotate-12 transition-transform"><EditPen /></el-icon> 
               发布新文章
             </router-link>
-          </div>
+          </UiCard>
           
           <!-- Search Box -->
-          <div class="panel-card bg-white rounded-xl shadow-sm p-4 border border-gray-100 relative overflow-hidden group">
+          <UiCard class="panel-card relative overflow-hidden group">
              <!-- Mac Window Dots -->
              <div class="flex gap-1.5 mb-3">
                <div class="w-3 h-3 rounded-full bg-red-400"></div>
@@ -68,23 +68,27 @@
                  <el-icon><Search /></el-icon>
                </div>
              </div>
-          </div>
+          </UiCard>
 
           <!-- Recommended Ad/Image -->
-          <div class="panel-card rounded-xl overflow-hidden shadow-sm group cursor-pointer relative h-40">
-            <img
-              src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop"
-              loading="lazy"
-              decoding="async"
-              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            />
-            <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
-              <span class="text-white font-bold border-2 border-white px-4 py-1 rounded-full backdrop-blur-sm">加入我们</span>
+          <UiCard class="panel-card overflow-hidden relative !p-0">
+            <div class="relative h-40">
+              <img
+                src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop"
+                loading="lazy"
+                decoding="async"
+                class="w-full h-full object-cover"
+              />
+              <div class="absolute inset-0 bg-gradient-to-r from-black/55 to-black/20 flex flex-col justify-end p-4">
+                <p class="text-white text-xs uppercase tracking-wider opacity-80">Join Our Team</p>
+                <p class="text-white font-bold text-lg leading-tight">加入我们 UI 卡片</p>
+                <p class="text-white/90 text-xs mt-1">共建前端组件体系与内容平台能力</p>
+              </div>
             </div>
-          </div>
+          </UiCard>
 
           <!-- Recommended Articles List -->
-          <div class="panel-card bg-white rounded-xl shadow-sm p-4 border border-gray-100 relative overflow-hidden">
+          <UiCard class="panel-card relative overflow-hidden">
             <div class="flex gap-1.5 mb-3">
                <div class="w-3 h-3 rounded-full bg-red-400"></div>
                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
@@ -114,10 +118,10 @@
                 暂无推荐文章
               </li>
             </ul>
-          </div>
+          </UiCard>
 
           <!-- Tags -->
-          <div class="panel-card bg-white rounded-xl shadow-sm p-4 border border-gray-100 relative overflow-hidden">
+          <UiCard class="panel-card relative overflow-hidden">
             <div class="flex gap-1.5 mb-3">
                <div class="w-3 h-3 rounded-full bg-red-400"></div>
                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
@@ -138,20 +142,22 @@
               </span>
               <span v-if="tags.length === 0" class="text-gray-400 text-sm">暂无标签</span>
             </div>
-          </div>
+          </UiCard>
         </aside>
 
         <!-- Main Content -->
         <main class="flex-grow min-w-0 space-y-8">
           <!-- Notice Bar -->
-          <div v-if="siteStore.siteConfig.showNotice" class="bg-white rounded-xl shadow-sm p-3 border border-gray-100 flex items-center gap-3 text-sm text-gray-600">
+          <UiCard v-if="siteStore.siteConfig.showNotice" :hoverable="false" padding-class="p-3">
+            <div class="flex items-center gap-3 text-sm text-gray-600">
             <el-icon class="text-orange-500 animate-pulse text-lg"><Bell /></el-icon>
             <div class="flex-grow overflow-hidden">
               <div class="animate-marquee whitespace-nowrap">
                 {{ siteStore.siteConfig.noticeText }}
               </div>
             </div>
-          </div>
+            </div>
+          </UiCard>
 
           <!-- Latest Articles Section -->
           <div v-if="!loading">
@@ -259,6 +265,7 @@ import { useRouter } from 'vue-router'
 import Typewriter from '../components/Typewriter.vue'
 import ProfileCard from '../components/ProfileCard.vue'
 import ArticleCard from '../components/ArticleCard.vue'
+import UiCard from '../components/UiCard.vue'
 import { 
   Grid, DArrowRight, Search, Trophy, 
   CollectionTag, Bell, Document, EditPen

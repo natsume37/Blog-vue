@@ -86,64 +86,68 @@
               :key="article.id"
               :to="`/article/${article.id}`"
               :data-index="index"
-              class="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 p-5 flex flex-col md:flex-row gap-6 group border border-gray-100"
+              class="block"
             >
-              <!-- Left Content -->
-              <div class="flex-grow flex flex-col min-w-0">
-                <!-- Date -->
-                <div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                  <el-icon><Calendar /></el-icon>
-                  <span>发布于 {{ article.createTime }}</span>
+              <UiCard class="group" padding-class="p-5">
+                <div class="flex flex-col md:flex-row gap-6">
+                  <!-- Left Content -->
+                  <div class="flex-grow flex flex-col min-w-0">
+                    <!-- Date -->
+                    <div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                      <el-icon><Calendar /></el-icon>
+                      <span>发布于 {{ article.createTime }}</span>
+                    </div>
+
+                    <!-- Title -->
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-500 transition-colors line-clamp-1">
+                      {{ article.title }}
+                    </h3>
+
+                    <!-- Meta Stats -->
+                    <div class="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                      <span class="flex items-center gap-1 text-orange-500">
+                        <el-icon><View /></el-icon> {{ article.viewCount || 0 }} 热度
+                      </span>
+                      <span class="flex items-center gap-1 text-gray-400">
+                        <el-icon><ChatDotSquare /></el-icon> {{ article.commentCount || 0 }} 评论
+                      </span>
+                    </div>
+
+                    <!-- Summary -->
+                    <p class="text-gray-600 text-sm leading-relaxed line-clamp-2 mb-4 flex-grow">
+                      {{ article.summary || '暂无摘要' }}
+                    </p>
+
+                    <!-- Footer Tags -->
+                    <div class="flex items-center gap-4 mt-auto">
+                      <span class="flex items-center gap-1 text-xs bg-yellow-50 text-yellow-600 px-2 py-1 rounded">
+                        <el-icon><Folder /></el-icon> {{ article.categoryName || '未分类' }}
+                      </span>
+                      <span v-if="article.tags && article.tags.length" class="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
+                        <el-icon><PriceTag /></el-icon> {{ article.tags[0].name }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Right Image -->
+                  <div class="w-full md:w-64 h-40 flex-shrink-0 rounded-lg overflow-hidden relative">
+                    <img 
+                      :src="article.cover || defaultCover" 
+                      alt="Cover" 
+                      loading="lazy" 
+                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" 
+                    />
+                  </div>
                 </div>
-
-                <!-- Title -->
-                <h3 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-500 transition-colors line-clamp-1">
-                  {{ article.title }}
-                </h3>
-
-                <!-- Meta Stats -->
-                <div class="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                  <span class="flex items-center gap-1 text-orange-500">
-                    <el-icon><View /></el-icon> {{ article.viewCount || 0 }} 热度
-                  </span>
-                  <span class="flex items-center gap-1 text-gray-400">
-                    <el-icon><ChatDotSquare /></el-icon> {{ article.commentCount || 0 }} 评论
-                  </span>
-                </div>
-
-                <!-- Summary -->
-                <p class="text-gray-600 text-sm leading-relaxed line-clamp-2 mb-4 flex-grow">
-                  {{ article.summary || '暂无摘要' }}
-                </p>
-
-                <!-- Footer Tags -->
-                <div class="flex items-center gap-4 mt-auto">
-                  <span class="flex items-center gap-1 text-xs bg-yellow-50 text-yellow-600 px-2 py-1 rounded">
-                    <el-icon><Folder /></el-icon> {{ article.categoryName || '未分类' }}
-                  </span>
-                  <span v-if="article.tags && article.tags.length" class="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
-                    <el-icon><PriceTag /></el-icon> {{ article.tags[0].name }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Right Image -->
-              <div class="w-full md:w-64 h-40 flex-shrink-0 rounded-lg overflow-hidden relative">
-                <img 
-                  :src="article.cover || defaultCover" 
-                  alt="Cover" 
-                  loading="lazy" 
-                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" 
-                />
-              </div>
+              </UiCard>
             </router-link>
           </TransitionGroup>
 
           <!-- Empty State -->
-          <div v-if="articles.length === 0" class="text-center py-20 text-gray-400 bg-white rounded-xl shadow-sm">
+          <UiCard v-if="articles.length === 0" :hoverable="false" class="text-center py-20 text-gray-400">
             <el-icon class="text-6xl mb-4"><Document /></el-icon>
             <p>暂无文章</p>
-          </div>
+          </UiCard>
         </div>
       </Transition>
 
@@ -167,6 +171,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { View, Document, Calendar, ChatDotSquare, Folder, PriceTag, Promotion } from '@element-plus/icons-vue'
 import { getArticles, getCategories, getTags } from '../api'
+import UiCard from '../components/UiCard.vue'
 
 const route = useRoute()
 const router = useRouter()
