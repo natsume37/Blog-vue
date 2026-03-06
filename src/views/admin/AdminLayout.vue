@@ -154,6 +154,7 @@ import {
   Setting,
   Timer,
   DataLine,
+  Odometer,
   Picture,
   Menu,
   Fold,
@@ -170,6 +171,7 @@ const isCollapsed = ref(false)
 const mobileDrawerVisible = ref(false)
 
 const menuItems = [
+  { path: '/admin/dashboard', label: '仪表盘', icon: Odometer },
   { path: '/admin/articles', label: '文章管理', icon: Document },
   { path: '/admin/categories', label: '分类/标签', icon: Collection },
   { path: '/admin/comments', label: '评论管理', icon: ChatDotSquare },

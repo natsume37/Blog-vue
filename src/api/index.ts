@@ -66,6 +66,7 @@ export const getProcesses = (params: any) => request.get('/monitor/processes', {
 export const getConnections = () => request.get('/monitor/connections')
 export const getVisitLogs = (params: any) => request.get('/monitor/visits', { params })
 export const getMapStats = () => request.get('/monitor/map-stats')
+export const getDashboardStats = () => request.get('/monitor/dashboard')
 
 // Comments
 // contentType: 'article' | 'changelog' | 'message_board'
