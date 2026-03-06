@@ -171,6 +171,13 @@
             </div>
             <el-switch v-model="form.is_hidden" />
           </div>
+          <el-form-item label="可见性">
+            <el-select v-model="form.visibility" class="w-full">
+              <el-option label="公开可见" value="public" />
+              <el-option label="登录后可见" value="login" />
+              <el-option label="仅管理员可见" value="private" />
+            </el-select>
+          </el-form-item>
           <div class="flex items-center justify-between">
             <span class="text-gray-700">置顶文章</span>
             <el-switch v-model="form.is_top" />
@@ -340,6 +347,7 @@ const form = ref<{
   tag_ids: number[]
   is_published: boolean
   is_hidden: boolean
+  visibility: 'public' | 'login' | 'private'
   is_top: boolean
   is_recommend: boolean
   is_protected: boolean
@@ -354,6 +362,7 @@ const form = ref<{
   tag_ids: [],
   is_published: true,
   is_hidden: false,
+  visibility: 'public',
   is_top: false,
   is_recommend: false,
   is_protected: false,
@@ -663,6 +672,7 @@ onMounted(async () => {
           tag_ids: article.tags ? article.tags.map((t: any) => t.id) : [],
           is_published: article.is_published,
           is_hidden: article.is_hidden || false,
+          visibility: article.visibility || 'public',
           is_top: article.is_top,
           is_recommend: article.is_recommend,
           is_protected: article.is_protected || false,

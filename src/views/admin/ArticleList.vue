@@ -45,6 +45,11 @@
           <template #default="{ row }">
             <div class="py-2">
               <div class="font-semibold text-gray-900 text-base mb-1">{{ row.title }}</div>
+              <div class="flex items-center gap-2 mb-1">
+                <el-tag size="small" :type="visibilityTagType(row.visibility)">
+                  {{ visibilityLabel(row.visibility) }}
+                </el-tag>
+              </div>
               <div class="text-xs text-gray-400 truncate max-w-md">{{ row.summary || '暂无摘要' }}</div>
             </div>
           </template>
@@ -172,6 +177,18 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const statusFilter = ref<'all' | 'draft' | 'recycle'>('all')
 const selectedIds = ref<number[]>([])
+
+const visibilityLabel = (value?: string) => {
+  if (value === 'login') return '登录可见'
+  if (value === 'private') return '仅管理员'
+  return '公开'
+}
+
+const visibilityTagType = (value?: string) => {
+  if (value === 'login') return 'warning'
+  if (value === 'private') return 'danger'
+  return 'success'
+}
 
 const fetchArticles = async () => {
   loading.value = true
