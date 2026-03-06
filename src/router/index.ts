@@ -118,6 +118,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'resources',
         name: 'AdminResources',
         component: () => import('../views/admin/ResourceManager.vue')
+      },
+      {
+        path: 'audit-logs',
+        name: 'AdminAuditLogs',
+        component: () => import('../views/admin/AuditLogManage.vue')
       }
     ]
   },

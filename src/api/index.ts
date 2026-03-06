@@ -67,6 +67,7 @@ export const getConnections = () => request.get('/monitor/connections')
 export const getVisitLogs = (params: any) => request.get('/monitor/visits', { params })
 export const getMapStats = () => request.get('/monitor/map-stats')
 export const getDashboardStats = () => request.get('/monitor/dashboard')
+export const getAuditLogs = (params: any) => request.get('/audit-logs/admin/list', { params })
 
 // Comments
 // contentType: 'article' | 'changelog' | 'message_board'

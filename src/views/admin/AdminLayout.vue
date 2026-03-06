@@ -182,6 +182,7 @@ const menuItems = [
   { path: '/admin/settings', label: '站点设置', icon: Setting },
   { path: '/admin/mail-settings', label: '邮件配置', icon: Setting },
   { path: '/admin/ai-settings', label: 'AI 配置', icon: Setting },
+  { path: '/admin/audit-logs', label: '操作日志', icon: DataLine },
   { path: '/admin/changelogs', label: '建站日志', icon: Timer }
 ]
 
