@@ -117,6 +117,24 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
+#### GitHub Actions 自动部署（CI/CD）
+
+仓库已内置工作流文件：`.github/workflows/deploy.yml`
+
+触发规则：
+- `pull_request -> main`：只执行 CI（构建校验，不部署）
+- `push -> main`：执行 CI + CD（自动部署）
+- `workflow_dispatch`：可手动触发，并选择是否部署
+
+请在 GitHub 仓库 `Settings -> Secrets and variables -> Actions` 中配置以下 Secrets：
+
+- `VITE_API_BASE_URL`：前端 API 地址
+- `DEPLOY_HOST`：服务器地址
+- `DEPLOY_PORT`：SSH 端口（如 `22`）
+- `DEPLOY_USER`：服务器登录用户
+- `DEPLOY_PASSWORD`：服务器登录密码
+- `DEPLOY_PATH`：部署目录（如 `/var/www/blog`）
+
 #### 方式二：Docker 部署
 
 1. 创建 `Dockerfile`：

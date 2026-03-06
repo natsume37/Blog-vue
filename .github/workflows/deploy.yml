@@ -1,14 +1,32 @@
-name: Deploy Blog Frontend
+name: Frontend CI/CD
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch: # 允许手动触发
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "是否执行部署"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+env:
+  NODE_VERSION: "20"
 
 jobs:
-  build-and-deploy:
+  ci:
+    name: CI Build
     runs-on: ubuntu-latest
-
+    outputs:
+      should_deploy: ${{ steps.decision.outputs.should_deploy }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,46 +34,79 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build
+      - name: Type Check + Build
         run: npm run build
         env:
-          # 生产环境变量（可选，如需覆盖 .env 中的配置）
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
-      - name: Deploy to Server
+      - name: Upload Dist Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+          if-no-files-found: error
+
+      - name: Decide Deploy
+        id: decision
+        shell: bash
+        run: |
+          SHOULD_DEPLOY="false"
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref_name }}" == "main" ]]; then
+            SHOULD_DEPLOY="true"
+          fi
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.deploy }}" == "true" ]]; then
+            SHOULD_DEPLOY="true"
+          fi
+          echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
+
+  cd:
+    name: CD Deploy
+    needs: ci
+    if: needs.ci.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Dist Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      - name: Prepare Deploy Directory
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: ${{ secrets.DEPLOY_PORT }}
           script: |
-            rm -rf /var/www/blog/*
-            mkdir -p /var/www/blog
+            mkdir -p ${{ secrets.DEPLOY_PATH }}
+            rm -rf ${{ secrets.DEPLOY_PATH }}/*
 
-      - name: Upload Files
+      - name: Upload Frontend Files
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: ${{ secrets.DEPLOY_PORT }}
           source: "dist/*"
-          target: "/var/www/blog"
+          target: "${{ secrets.DEPLOY_PATH }}"
           strip_components: 1
 
       - name: Reload Nginx
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
-          script: sudo systemctl reload nginx
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            sudo nginx -t
+            sudo systemctl reload nginx
