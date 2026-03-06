@@ -1,5 +1,7 @@
 # Miyazaki Style Blog
 
+[中文（默认）](./README.md) | [English](./README.en.md)
+
 一个使用 Vue 3 + Vite + Element Plus + Tailwind CSS 构建的个人技术博客。
 
 ## ✨ 特性
@@ -216,7 +218,8 @@ Blog/
 
 ## 🔗 相关文档
 
-- [API 文档](./API_DOCS.md) - 后端接口规范
+- [API 文档（中文）](./API_DOCS.md) - 后端接口规范
+- [API Docs (English)](./API_DOCS.en.md) - Backend API overview
 - [后端部署](https://github.com/natsume37/Blog-backend) - FastAPI 后端部署指南
 
 ## 📄 License
