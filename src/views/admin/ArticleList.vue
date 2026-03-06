@@ -18,6 +18,13 @@
 
     <!-- Content -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="px-4 pt-4">
+        <el-radio-group v-model="statusFilter" size="small" @change="handleFilterChange">
+          <el-radio-button label="all">全部</el-radio-button>
+          <el-radio-button label="draft">草稿箱</el-radio-button>
+          <el-radio-button label="recycle">回收站</el-radio-button>
+        </el-radio-group>
+      </div>
       <el-table 
         :data="articles" 
         style="width: 100%" 
@@ -150,11 +157,16 @@ const loading = ref(false)
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
+const statusFilter = ref<'all' | 'draft' | 'recycle'>('all')
 
 const fetchArticles = async () => {
   loading.value = true
   try {
-    const res: any = await api.getAdminArticles({ current: currentPage.value, size: pageSize.value })
+    const res: any = await api.getAdminArticles({
+      current: currentPage.value,
+      size: pageSize.value,
+      status: statusFilter.value
+    })
     if (res.code === 200) {
       articles.value = res.data.records || []
       total.value = res.data.total || 0
@@ -164,6 +176,11 @@ const fetchArticles = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleFilterChange = () => {
+  currentPage.value = 1
+  fetchArticles()
 }
 
 const handleStatusChange = async (row: any, field: string) => {

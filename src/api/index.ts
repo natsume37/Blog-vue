@@ -78,8 +78,15 @@ export const likeComment = (id: number) => request.post(`/comments/${id}/like`)
 
 // Comments (Admin)
 export const getAdminComments = (params: any) => request.get('/comments/admin/list', { params })
+export const getAdminCommentStats = () => request.get('/comments/admin/stats')
 export const updateAdminComment = (id: number, data: any) => request.put(`/comments/admin/${id}`, data)
 export const deleteAdminComment = (id: number) => request.delete(`/comments/admin/${id}`)
+
+// Mail settings (Admin)
+export const getMailConfig = () => request.get('/site/mail-config')
+export const updateMailConfig = (data: any) => request.put('/site/mail-config', data)
+export const testMailConfig = (config: any, emailTo: string) =>
+  request.post('/site/mail-config/test', { ...config, emailTo })
 
 // Upload
 export const getUploadToken = () => request.get('/upload/token')

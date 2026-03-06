@@ -100,6 +100,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../views/admin/SiteSettings.vue')
       },
       {
+        path: 'mail-settings',
+        name: 'AdminMailSettings',
+        component: () => import('../views/admin/MailSettings.vue')
+      },
+      {
         path: 'ai-settings',
         name: 'AdminAISettings',
         component: () => import('../views/admin/AISettings.vue')

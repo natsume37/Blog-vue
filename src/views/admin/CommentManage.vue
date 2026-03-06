@@ -3,6 +3,14 @@
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-gray-800">评论管理</h2>
       <div class="flex gap-3">
+        <el-button-group>
+          <el-button :type="quickFilter === 'all' ? 'primary' : 'default'" @click="setQuickFilter('all')">
+            全部 {{ stats.total }}
+          </el-button>
+          <el-button :type="quickFilter === 'pending' ? 'warning' : 'default'" @click="setQuickFilter('pending')">
+            待审核 {{ stats.pending }}
+          </el-button>
+        </el-button-group>
         <el-select v-model="filterStatus" placeholder="筛选状态" clearable @change="fetchComments">
           <el-option label="全部" :value="null" />
           <el-option label="已审核" :value="true" />
@@ -122,6 +130,8 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const filterStatus = ref<boolean | null>(null)
 const keyword = ref('')
+const quickFilter = ref<'all' | 'pending'>('all')
+const stats = ref({ total: 0, approved: 0, pending: 0 })
 
 const fetchComments = async () => {
   loading.value = true
@@ -143,6 +153,7 @@ const fetchComments = async () => {
     if (res.code === 200) {
       comments.value = res.data.records || []
       total.value = res.data.total || 0
+      fetchStats()
     }
   } catch (error) {
     console.error(error)
@@ -150,6 +161,24 @@ const fetchComments = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const fetchStats = async () => {
+  try {
+    const res: any = await api.getAdminCommentStats()
+    if (res.code === 200 && res.data) {
+      stats.value = res.data
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const setQuickFilter = (mode: 'all' | 'pending') => {
+  quickFilter.value = mode
+  filterStatus.value = mode === 'pending' ? false : null
+  currentPage.value = 1
+  fetchComments()
 }
 
 const handleApprove = async (row: any) => {
@@ -195,8 +224,9 @@ const handleDelete = (row: any) => {
     try {
       const res: any = await api.deleteAdminComment(row.id)
       if (res.code === 200) {
-        ElMessage.success('删除成功')
-        fetchComments()
+      ElMessage.success('删除成功')
+      fetchComments()
+      fetchStats()
       } else {
         ElMessage.error(res.msg || '删除失败')
       }
@@ -220,6 +250,7 @@ const formatTime = (dateStr: string) => {
 }
 
 onMounted(() => {
+  fetchStats()
   fetchComments()
 })
 </script>
