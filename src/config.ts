@@ -4,9 +4,13 @@
  */
 
 // API 配置
+const envApiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
+const normalizedApiBase = envApiBase && envApiBase.length > 0 ? envApiBase : '/api/v1'
+
 export const apiConfig = {
   // 后端 API 基础地址
-  baseURL: import.meta.env.VITE_API_BASE_URL as string,
+  // 兜底为同域反向代理，避免 CI Secret 空值导致登录接口失效
+  baseURL: normalizedApiBase,
   // 请求超时时间（毫秒）
   timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000,
 }

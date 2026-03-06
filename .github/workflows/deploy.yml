@@ -41,10 +41,18 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Prepare Build Env
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.VITE_API_BASE_URL }}" ]; then
+            echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" >> .env.production.local
+            echo "Using VITE_API_BASE_URL from secret."
+          else
+            echo "VITE_API_BASE_URL secret is empty, using repository .env.production."
+          fi
+
       - name: Type Check + Build
         run: npm run build
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Upload Dist Artifact
         uses: actions/upload-artifact@v4
