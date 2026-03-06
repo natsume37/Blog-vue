@@ -123,6 +123,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'audit-logs',
         name: 'AdminAuditLogs',
         component: () => import('../views/admin/AuditLogManage.vue')
+      },
+      {
+        path: 'login-logs',
+        name: 'AdminLoginLogs',
+        component: () => import('../views/admin/LoginLogManage.vue')
       }
     ]
   },

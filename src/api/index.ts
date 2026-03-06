@@ -70,6 +70,7 @@ export const getVisitLogs = (params: any) => request.get('/monitor/visits', { pa
 export const getMapStats = () => request.get('/monitor/map-stats')
 export const getDashboardStats = () => request.get('/monitor/dashboard')
 export const getAuditLogs = (params: any) => request.get('/audit-logs/admin/list', { params })
+export const getLoginLogs = (params: any) => request.get('/login-logs/admin/list', { params })
 
 // Comments
 // contentType: 'article' | 'changelog' | 'message_board'
