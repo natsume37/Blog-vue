@@ -109,7 +109,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar } from '@element-plus/icons-vue'
+import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar, Connection } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
 import { useSiteStore } from '../stores/site'
@@ -132,6 +132,7 @@ const handleSearch = () => {
 const navLinks = [
   { name: '首页', path: '/', icon: HomeFilled },
   { name: '分类', path: '/category', icon: Menu },
+  { name: '友链', path: '/friends', icon: Connection },
   { name: '留言板', path: '/message', icon: ChatLineSquare },
   { name: '建站日志', path: '/changelog', icon: Calendar },
 ]

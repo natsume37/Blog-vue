@@ -18,17 +18,17 @@
     </div>
     
     <!-- Content -->
-    <div class="p-6 flex-grow flex flex-col">
+    <div class="article-card__body p-6 flex-grow flex flex-col min-h-0">
       <!-- Title -->
-      <h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-miyazaki-blue transition-colors leading-tight">
+      <h3 class="article-card__title text-lg md:text-xl font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-miyazaki-blue transition-colors leading-tight">
         {{ title }}
       </h3>
 
       <!-- Summary (Optional, if available) -->
-      <p v-if="summary" class="text-sm text-gray-600 line-clamp-2 mb-3 flex-grow">
+      <p v-if="summary" class="article-card__summary text-sm text-gray-600 line-clamp-2 mb-3 flex-grow">
         {{ summary }}
       </p>
-      <div v-else class="flex-grow"></div>
+      <div v-else class="flex-grow min-h-0"></div>
 
       <!-- Bottom Meta -->
       <div class="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between text-sm text-gray-500">
@@ -98,6 +98,11 @@ const formatDate = (str: string) => {
 .article-card:hover {
   border-color: rgba(56, 189, 248, 0.3);
   box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+}
+
+.article-card__title,
+.article-card__summary {
+  overflow-wrap: anywhere;
 }
 
 .cover-shine {

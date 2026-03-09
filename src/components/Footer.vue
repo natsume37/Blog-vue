@@ -13,6 +13,7 @@
           <ul class="space-y-3 text-gray-500">
             <li><router-link to="/" class="hover:text-miyazaki-blue transition-colors">首页</router-link></li>
             <li><router-link to="/category" class="hover:text-miyazaki-blue transition-colors">文章分类</router-link></li>
+            <li><router-link to="/friends" class="hover:text-miyazaki-blue transition-colors">友链</router-link></li>
             <li><router-link to="/message" class="hover:text-miyazaki-blue transition-colors">留言板</router-link></li>
             <li><router-link to="/changelog" class="hover:text-miyazaki-blue transition-colors">建站日志</router-link></li>
             <li><router-link to="/about" class="hover:text-miyazaki-blue transition-colors">关于我</router-link></li>

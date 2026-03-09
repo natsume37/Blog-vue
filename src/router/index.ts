@@ -40,6 +40,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/Changelog.vue')
   },
   {
+    path: '/friends',
+    name: 'FriendLinks',
+    component: () => import('../views/FriendLinks.vue')
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('../views/Profile.vue'),
@@ -113,6 +118,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'changelogs',
         name: 'AdminChangelogs',
         component: () => import('../views/admin/ChangelogManage.vue')
+      },
+      {
+        path: 'friend-links',
+        name: 'AdminFriendLinks',
+        component: () => import('../views/admin/FriendLinkManage.vue')
       },
       {
         path: 'resources',

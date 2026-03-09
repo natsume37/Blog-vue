@@ -156,6 +156,7 @@ import {
   DataLine,
   Odometer,
   Picture,
+  Connection,
   Menu,
   Fold,
   Expand
@@ -175,6 +176,7 @@ const menuItems = [
   { path: '/admin/articles', label: '文章管理', icon: Document },
   { path: '/admin/categories', label: '分类/标签', icon: Collection },
   { path: '/admin/comments', label: '评论管理', icon: ChatDotSquare },
+  { path: '/admin/friend-links', label: '友链管理', icon: Connection },
   { path: '/admin/users', label: '用户管理', icon: User },
   { path: '/admin/resources', label: '图库管理', icon: Picture },
   { path: '/admin/monitor', label: '服务器监控', icon: Monitor },

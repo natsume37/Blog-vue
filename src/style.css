@@ -41,6 +41,27 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.line-clamp-1,
+.line-clamp-2,
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+.line-clamp-1 {
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  -webkit-line-clamp: 3;
+}
+
 /* 展示字体：用于品牌和大标题 */
 .font-display {
   font-family: var(--font-display) !important;

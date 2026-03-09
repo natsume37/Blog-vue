@@ -59,6 +59,14 @@ export const createChangelog = (data: any) => request.post('/changelogs', data)
 export const updateChangelog = (id: number, data: any) => request.put(`/changelogs/${id}`, data)
 export const deleteChangelog = (id: number) => request.delete(`/changelogs/${id}`)
 
+// Friend Links
+export const getFriendLinks = (params?: any) => request.get('/friend-links', { params })
+export const submitFriendLinkApplication = (data: any) => request.post('/friend-links/apply', data)
+export const getAdminFriendLinks = (params?: any) => request.get('/friend-links/admin/list', { params })
+export const createFriendLink = (data: any) => request.post('/friend-links', data)
+export const updateFriendLink = (id: number, data: any) => request.put(`/friend-links/${id}`, data)
+export const deleteFriendLink = (id: number) => request.delete(`/friend-links/${id}`)
+
 // Users (Admin)
 export const getAdminUsers = (params: any) => request.get('/users/admin/list', { params })
 export const createAdminUser = (data: any) => request.post('/users/admin', data)
