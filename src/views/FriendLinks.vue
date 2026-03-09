@@ -12,19 +12,23 @@
           <div class="space-y-6">
             <span class="inline-flex items-center gap-2 rounded-full bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-sky-700">
               <el-icon><Connection /></el-icon>
-              Friend Exchange
+              Friend Links
             </span>
             <div class="space-y-4">
               <h1 class="max-w-3xl text-4xl font-semibold tracking-tight text-slate-900 md:text-5xl">
-                友链页上线了。
-                <span class="block text-sky-600">展示同频站点，也支持互换申请。</span>
+                友链。
+                <span class="block text-sky-600">先看站点，再决定要不要互链。</span>
               </h1>
               <p class="max-w-2xl text-base leading-8 text-slate-500 md:text-lg">
-                这里收录我常逛、愿意互链以及风格契合的网站。你也可以提交你的站点信息，审核通过后会出现在这里。
+                这里优先展示我长期关注、愿意互链、内容风格契合的网站。互链申请入口保留在页面下方，不会抢走主视觉。
               </p>
             </div>
             <div class="flex flex-wrap gap-3">
-              <button class="friend-cta friend-cta-primary" @click="scrollToApply">
+              <button class="friend-cta friend-cta-primary" @click="scrollToLinks">
+                <el-icon><Connection /></el-icon>
+                浏览友链
+              </button>
+              <button class="friend-cta friend-cta-secondary" @click="scrollToApply">
                 <el-icon><Promotion /></el-icon>
                 申请互链
               </button>
@@ -35,7 +39,7 @@
             </div>
             <div class="grid gap-3 sm:grid-cols-3">
               <div class="stat-chip">
-                <div class="stat-chip__label">已收录</div>
+                <div class="stat-chip__label">友链总数</div>
                 <div class="stat-chip__value">{{ friendLinks.length }}</div>
               </div>
               <div class="stat-chip">
@@ -50,48 +54,167 @@
           </div>
 
           <div class="grid gap-4">
-            <div class="site-card">
-              <div class="flex items-start gap-4">
-                <img
-                  :src="siteStore.siteConfig.siteAvatar"
-                  alt="site avatar"
-                  class="h-20 w-20 rounded-3xl border border-slate-200 object-cover shadow-sm"
-                />
-                <div class="min-w-0">
-                  <div class="mb-1 text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">本站信息</div>
-                  <h2 class="truncate text-2xl font-semibold text-slate-900">{{ siteStore.siteConfig.siteName }}</h2>
-                  <p class="mt-2 text-sm leading-7 text-slate-500">{{ siteStore.siteConfig.siteDescription }}</p>
+            <div class="hero-links-card">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">精选预览</div>
+                  <h2 class="mt-2 text-2xl font-semibold text-slate-900">首屏先看友链</h2>
                 </div>
+                <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">{{ heroPreviewLinks.length }} 个站点</span>
               </div>
-              <div class="mt-5 grid gap-3 text-sm text-slate-600">
-                <div class="site-card__meta">
-                  <span>站点地址</span>
-                  <strong>{{ siteUrl }}</strong>
-                </div>
-                <div class="site-card__meta">
-                  <span>站长</span>
-                  <strong>{{ siteStore.siteConfig.siteAuthor }}</strong>
-                </div>
-                <div class="site-card__meta">
-                  <span>联系方式</span>
-                  <strong>{{ socialEmail }}</strong>
-                </div>
+              <div class="mt-5 space-y-3">
+                <a
+                  v-for="link in heroPreviewLinks"
+                  :key="link.id"
+                  :href="link.url"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="hero-link-card"
+                >
+                  <img :src="link.logo || siteStore.siteConfig.siteAvatar" alt="logo" class="h-12 w-12 rounded-2xl border border-slate-200 object-cover" />
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <div class="truncate text-base font-semibold text-slate-900">{{ link.name }}</div>
+                      <span v-if="link.is_featured" class="featured-pill">精选</span>
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-slate-500 line-clamp-2">
+                      {{ link.description || '已通过审核并展示在友链目录中。' }}
+                    </p>
+                  </div>
+                  <el-icon class="text-slate-300"><ArrowRight /></el-icon>
+                </a>
+              </div>
+              <div v-if="!heroPreviewLinks.length" class="hero-link-empty">
+                暂时还没有展示中的友链，后续会从已审核站点里补上。
               </div>
             </div>
 
-            <div class="rules-card">
-              <div class="mb-4 flex items-center gap-2 text-slate-900">
-                <el-icon class="text-amber-500"><MagicStick /></el-icon>
-                <h3 class="text-lg font-semibold">互链说明</h3>
-              </div>
-              <ul class="space-y-3 text-sm leading-7 text-slate-500">
-                <li>站点可正常访问，内容持续更新，主题明确。</li>
-                <li>申请前建议先添加本站友链，并在表单中填写互链地址。</li>
-                <li>暂不收录采集站、纯广告页、无法稳定访问的站点。</li>
-                <li>通过后会展示在前台，未通过或暂不上线的申请会保留在后台审核列表。</li>
-              </ul>
+            <div class="hero-side-note">
+              <div class="text-sm font-semibold text-slate-900">互链入口保留在下方</div>
+              <p class="mt-2 text-sm leading-7 text-slate-500">
+                先浏览友链目录，确认风格合适后，再到页面下半部分提交互链申请。
+              </p>
+              <button class="friend-cta friend-cta-secondary mt-4" @click="scrollToApply">
+                <el-icon><Promotion /></el-icon>
+                前往申请区
+              </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section ref="linksSectionRef" class="mt-10">
+        <div class="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Friend links</div>
+            <h2 class="mt-2 text-3xl font-semibold text-slate-900">友链目录</h2>
+            <p class="mt-2 text-sm leading-7 text-slate-500">首屏下方直接进入完整友链列表，按分组筛选查看。</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="group in groups"
+              :key="group"
+              class="filter-pill"
+              :class="group === activeGroup ? 'filter-pill-active' : 'filter-pill-default'"
+              @click="activeGroup = group"
+            >
+              {{ group }}
+            </button>
+          </div>
+        </div>
+
+        <div v-loading="loading" class="min-h-[240px]">
+          <TransitionGroup v-if="filteredLinks.length" name="friend-card" tag="div" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <a
+              v-for="(link, index) in filteredLinks"
+              :key="link.id"
+              :href="link.url"
+              target="_blank"
+              rel="noreferrer"
+              class="friend-card group"
+              :style="{
+                '--friend-accent': link.site_color || '#38bdf8',
+                '--friend-delay': `${index * 60}ms`
+              }"
+            >
+              <div class="friend-card__shine"></div>
+              <div class="flex items-start gap-4">
+                <img
+                  :src="link.logo || siteStore.siteConfig.siteAvatar"
+                  alt="logo"
+                  class="h-14 w-14 rounded-2xl border border-slate-200 object-cover shadow-sm"
+                />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <h3 class="truncate text-lg font-semibold text-slate-900">{{ link.name }}</h3>
+                    <span v-if="link.is_featured" class="featured-pill">精选</span>
+                  </div>
+                  <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
+                    <span class="rounded-full bg-slate-100 px-2 py-1">{{ link.group_name || '推荐站点' }}</span>
+                    <span>{{ getDomain(link.url) }}</span>
+                  </div>
+                </div>
+                <el-icon class="mt-1 text-slate-300 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-sky-500"><ArrowRight /></el-icon>
+              </div>
+              <p class="mt-5 min-h-[72px] text-sm leading-7 text-slate-500 line-clamp-3">
+                {{ link.description || '这个站点还没有填写简介，但已经通过审核。' }}
+              </p>
+              <div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-400">
+                <span>收录于 {{ formatDate(link.created_at) }}</span>
+                <span class="friend-card__visit">Visit</span>
+              </div>
+            </a>
+          </TransitionGroup>
+
+          <div v-else class="empty-shell">
+            <el-icon class="text-4xl text-slate-300"><Connection /></el-icon>
+            <div class="mt-4 text-lg font-semibold text-slate-700">还没有可展示的友链</div>
+            <p class="mt-2 text-sm leading-7 text-slate-400">可以先提交申请，审核通过后这里会显示你的站点。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-10 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+        <div class="site-card">
+          <div class="flex items-start gap-4">
+            <img
+              :src="siteStore.siteConfig.siteAvatar"
+              alt="site avatar"
+              class="h-20 w-20 rounded-3xl border border-slate-200 object-cover shadow-sm"
+            />
+            <div class="min-w-0">
+              <div class="mb-1 text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">本站信息</div>
+              <h2 class="truncate text-2xl font-semibold text-slate-900">{{ siteStore.siteConfig.siteName }}</h2>
+              <p class="mt-2 text-sm leading-7 text-slate-500">{{ siteStore.siteConfig.siteDescription }}</p>
+            </div>
+          </div>
+          <div class="mt-5 grid gap-3 text-sm text-slate-600">
+            <div class="site-card__meta">
+              <span>站点地址</span>
+              <strong>{{ siteUrl }}</strong>
+            </div>
+            <div class="site-card__meta">
+              <span>站长</span>
+              <strong>{{ siteStore.siteConfig.siteAuthor }}</strong>
+            </div>
+            <div class="site-card__meta">
+              <span>联系方式</span>
+              <strong>{{ socialEmail }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="rules-card">
+          <div class="mb-4 flex items-center gap-2 text-slate-900">
+            <el-icon class="text-amber-500"><MagicStick /></el-icon>
+            <h3 class="text-lg font-semibold">互链说明</h3>
+          </div>
+          <ul class="space-y-3 text-sm leading-7 text-slate-500">
+            <li>站点可正常访问，内容持续更新，主题明确。</li>
+            <li>申请前建议先添加本站友链，并在表单中填写互链地址。</li>
+            <li>暂不收录采集站、纯广告页、无法稳定访问的站点。</li>
+            <li>通过后会展示在前台，未通过或暂不上线的申请会保留在后台审核列表。</li>
+          </ul>
         </div>
       </section>
 
@@ -102,13 +225,13 @@
         >
           <div class="flex flex-col gap-5 border-b border-slate-100 px-6 py-6 md:flex-row md:items-center md:justify-between md:px-8">
             <div>
-              <div class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">Apply for exchange</div>
-              <h2 class="mt-2 text-2xl font-semibold text-slate-900">申请友链</h2>
+              <div class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">Link Exchange</div>
+              <h2 class="mt-2 text-2xl font-semibold text-slate-900">互链申请</h2>
               <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-500">
-                用表单提交你的站点信息。面板会根据你的输入自动切换交互阶段，提交成功后会给出清晰反馈。
+                浏览完上面的友链目录后，如果你的站点也适合收录，可以在这里提交申请。交互动画和提交反馈仍然保留。
               </p>
             </div>
-            <button class="friend-cta friend-cta-primary" @click="toggleApplication">
+            <button class="friend-cta friend-cta-secondary" @click="toggleApplication">
               <el-icon class="transition-transform duration-300" :class="applicationOpen ? 'rotate-45' : ''"><Plus /></el-icon>
               {{ applicationOpen ? '收起申请面板' : '展开申请面板' }}
             </button>
@@ -272,77 +395,6 @@
           </transition>
         </div>
       </section>
-
-      <section class="mt-10">
-        <div class="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Friend links</div>
-            <h2 class="mt-2 text-3xl font-semibold text-slate-900">已通过审核的友链</h2>
-            <p class="mt-2 text-sm leading-7 text-slate-500">按分组筛选查看，卡片支持悬浮过渡和色彩高亮。</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="group in groups"
-              :key="group"
-              class="filter-pill"
-              :class="group === activeGroup ? 'filter-pill-active' : 'filter-pill-default'"
-              @click="activeGroup = group"
-            >
-              {{ group }}
-            </button>
-          </div>
-        </div>
-
-        <div v-loading="loading" class="min-h-[240px]">
-          <TransitionGroup v-if="filteredLinks.length" name="friend-card" tag="div" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <a
-              v-for="(link, index) in filteredLinks"
-              :key="link.id"
-              :href="link.url"
-              target="_blank"
-              rel="noreferrer"
-              class="friend-card group"
-              :style="{
-                '--friend-accent': link.site_color || '#38bdf8',
-                '--friend-delay': `${index * 60}ms`
-              }"
-            >
-              <div class="friend-card__shine"></div>
-              <div class="flex items-start gap-4">
-                <img
-                  :src="link.logo || siteStore.siteConfig.siteAvatar"
-                  alt="logo"
-                  class="h-14 w-14 rounded-2xl border border-slate-200 object-cover shadow-sm"
-                />
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <h3 class="truncate text-lg font-semibold text-slate-900">{{ link.name }}</h3>
-                    <span v-if="link.is_featured" class="featured-pill">精选</span>
-                  </div>
-                  <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                    <span class="rounded-full bg-slate-100 px-2 py-1">{{ link.group_name || '推荐站点' }}</span>
-                    <span>{{ getDomain(link.url) }}</span>
-                  </div>
-                </div>
-                <el-icon class="mt-1 text-slate-300 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-sky-500"><ArrowRight /></el-icon>
-              </div>
-              <p class="mt-5 min-h-[72px] text-sm leading-7 text-slate-500 line-clamp-3">
-                {{ link.description || '这个站点还没有填写简介，但已经通过审核。' }}
-              </p>
-              <div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-400">
-                <span>收录于 {{ formatDate(link.created_at) }}</span>
-                <span class="friend-card__visit">Visit</span>
-              </div>
-            </a>
-          </TransitionGroup>
-
-          <div v-else class="empty-shell">
-            <el-icon class="text-4xl text-slate-300"><Connection /></el-icon>
-            <div class="mt-4 text-lg font-semibold text-slate-700">还没有可展示的友链</div>
-            <p class="mt-2 text-sm leading-7 text-slate-400">可以先提交申请，审核通过后这里会显示你的站点。</p>
-          </div>
-        </div>
-      </section>
     </div>
   </div>
 </template>
@@ -385,6 +437,7 @@ const submitSuccess = ref(false)
 const activeGroup = ref('全部')
 const focusedField = ref('')
 const applySectionRef = ref<HTMLElement | null>(null)
+const linksSectionRef = ref<HTMLElement | null>(null)
 const friendLinks = ref<FriendLink[]>([])
 
 const applyForm = reactive({
@@ -431,6 +484,11 @@ const filteredLinks = computed(() => {
 })
 
 const featuredCount = computed(() => friendLinks.value.filter(item => item.is_featured).length)
+const heroPreviewLinks = computed(() => {
+  const featured = friendLinks.value.filter(item => item.is_featured)
+  const source = featured.length ? featured : friendLinks.value
+  return source.slice(0, 3)
+})
 
 const currentStep = computed(() => {
   if (submitSuccess.value) return 2
@@ -483,6 +541,10 @@ const fetchFriendLinks = async () => {
 const scrollToApply = () => {
   applicationOpen.value = true
   applySectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const scrollToLinks = () => {
+  linksSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 const toggleApplication = () => {
@@ -601,6 +663,40 @@ onMounted(() => {
 
 .hero-panel {
   position: relative;
+}
+
+.hero-links-card,
+.hero-side-note {
+  border-radius: 24px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(248, 250, 252, 0.93));
+  padding: 1.3rem;
+}
+
+.hero-link-card {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: white;
+  padding: 0.95rem;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.hero-link-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.06);
+}
+
+.hero-link-empty {
+  border-radius: 18px;
+  border: 1px dashed rgba(203, 213, 225, 0.9);
+  padding: 1rem;
+  color: #94a3b8;
+  font-size: 0.92rem;
+  line-height: 1.7;
 }
 
 .friend-cta {
