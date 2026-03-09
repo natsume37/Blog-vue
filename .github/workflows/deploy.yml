@@ -20,6 +20,7 @@ on:
 
 env:
   NODE_VERSION: "20"
+  DEPLOY_SSH_CONNECT_TIMEOUT: "30"
 
 jobs:
   ci:
@@ -86,35 +87,50 @@ jobs:
           name: frontend-dist
           path: dist
 
-      - name: Prepare Deploy Directory
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_PASSWORD }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          script: |
-            mkdir -p ${{ secrets.DEPLOY_PATH }}
-            rm -rf ${{ secrets.DEPLOY_PATH }}/*
+      - name: Install SSH Utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
 
-      - name: Upload Frontend Files
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_PASSWORD }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          source: "dist/*"
-          target: "${{ secrets.DEPLOY_PATH }}"
-          strip_components: 1
+      - name: Deploy Frontend Files
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
 
-      - name: Reload Nginx
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          password: ${{ secrets.DEPLOY_PASSWORD }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          script: |
-            sudo nginx -t
-            sudo systemctl reload nginx
+          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_USER" ] || [ -z "$DEPLOY_PASSWORD" ] || [ -z "$DEPLOY_PORT" ] || [ -z "$DEPLOY_PATH" ]; then
+            echo "Missing deploy secrets."
+            exit 1
+          fi
+
+          export SSHPASS="$DEPLOY_PASSWORD"
+
+          for attempt in 1 2 3; do
+            echo "Deploy attempt $attempt/3"
+
+            if tar -C dist -czf - . | sshpass -e ssh \
+              -p "$DEPLOY_PORT" \
+              -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              -o ConnectTimeout="${{ env.DEPLOY_SSH_CONNECT_TIMEOUT }}" \
+              -o ServerAliveInterval=15 \
+              -o ServerAliveCountMax=3 \
+              "$DEPLOY_USER@$DEPLOY_HOST" \
+              "set -euo pipefail; mkdir -p '$DEPLOY_PATH'; rm -rf '$DEPLOY_PATH'/*; tar -xzf - -C '$DEPLOY_PATH'; sudo nginx -t; sudo systemctl reload nginx"; then
+              echo "Frontend deploy completed."
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "Frontend deploy failed after 3 attempts."
+              exit 1
+            fi
+
+            echo "SSH deploy failed, retrying in 15 seconds..."
+            sleep 15
+          done
