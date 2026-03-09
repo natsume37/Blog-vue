@@ -7,7 +7,11 @@
     </div>
 
     <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <section class="hero-panel overflow-hidden rounded-[32px] border border-white/70 bg-white/88 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-10">
+      <section
+        class="hero-panel interactive-surface overflow-hidden rounded-[32px] border border-white/70 bg-white/88 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-10"
+        @pointermove="handleSurfaceMove"
+        @pointerleave="handleSurfaceLeave"
+      >
         <div class="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <div class="space-y-6">
             <span class="inline-flex items-center gap-2 rounded-full bg-sky-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-sky-700">
@@ -54,7 +58,7 @@
           </div>
 
           <div class="grid gap-4">
-            <div class="hero-links-card">
+            <div class="hero-links-card interactive-surface" @pointermove="handleSurfaceMove" @pointerleave="handleSurfaceLeave">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <div class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">精选预览</div>
@@ -89,7 +93,7 @@
               </div>
             </div>
 
-            <div class="hero-side-note">
+            <div class="hero-side-note interactive-surface" @pointermove="handleSurfaceMove" @pointerleave="handleSurfaceLeave">
               <div class="text-sm font-semibold text-slate-900">互链入口保留在下方</div>
               <p class="mt-2 text-sm leading-7 text-slate-500">
                 先浏览友链目录，确认风格合适后，再到页面下半部分提交互链申请。
@@ -98,6 +102,62 @@
                 <el-icon><Promotion /></el-icon>
                 前往申请区
               </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="avatarWallPrimary.length" class="avatar-wall">
+          <div class="avatar-wall__header">
+            <div>
+              <div class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Flowing wall</div>
+              <h2 class="mt-2 text-2xl font-semibold text-slate-900">友链头像墙</h2>
+            </div>
+            <p class="max-w-xl text-sm leading-7 text-slate-500">
+              先快速扫一眼都有哪些站点，再往下进入完整友链目录。悬停卡片时，流动动画会暂停。
+            </p>
+          </div>
+
+          <div class="avatar-wall__viewport">
+            <div class="avatar-wall__track avatar-wall__track-forward">
+              <a
+                v-for="(link, index) in avatarWallPrimary"
+                :key="`avatar-forward-${link.id}-${index}`"
+                :href="link.url"
+                target="_blank"
+                rel="noreferrer"
+                class="avatar-pill interactive-surface"
+                @pointermove="handleSurfaceMove"
+                @pointerleave="handleSurfaceLeave"
+              >
+                <img :src="link.logo || siteStore.siteConfig.siteAvatar" :alt="link.name" class="avatar-pill__logo" />
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-sm font-semibold text-slate-900">{{ link.name }}</div>
+                  <div class="mt-1 truncate text-xs text-slate-400">{{ getDomain(link.url) }}</div>
+                </div>
+                <span v-if="link.is_featured" class="avatar-pill__tag">精选</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="avatar-wall__viewport avatar-wall__viewport-secondary">
+            <div class="avatar-wall__track avatar-wall__track-reverse">
+              <a
+                v-for="(link, index) in avatarWallSecondary"
+                :key="`avatar-reverse-${link.id}-${index}`"
+                :href="link.url"
+                target="_blank"
+                rel="noreferrer"
+                class="avatar-pill avatar-pill-secondary interactive-surface"
+                @pointermove="handleSurfaceMove"
+                @pointerleave="handleSurfaceLeave"
+              >
+                <img :src="link.logo || siteStore.siteConfig.siteAvatar" :alt="link.name" class="avatar-pill__logo" />
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-sm font-semibold text-slate-900">{{ link.name }}</div>
+                  <div class="mt-1 truncate text-xs text-slate-400">{{ link.group_name || '推荐站点' }}</div>
+                </div>
+                <el-icon class="text-slate-300"><ArrowRight /></el-icon>
+              </a>
             </div>
           </div>
         </div>
@@ -131,11 +191,13 @@
               :href="link.url"
               target="_blank"
               rel="noreferrer"
-              class="friend-card group"
+              class="friend-card group interactive-surface"
               :style="{
                 '--friend-accent': link.site_color || '#38bdf8',
                 '--friend-delay': `${index * 60}ms`
               }"
+              @pointermove="handleSurfaceMove"
+              @pointerleave="handleSurfaceLeave"
             >
               <div class="friend-card__shine"></div>
               <div class="flex items-start gap-4">
@@ -175,7 +237,7 @@
       </section>
 
       <section class="mt-10 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-        <div class="site-card">
+        <div class="site-card interactive-surface" @pointermove="handleSurfaceMove" @pointerleave="handleSurfaceLeave">
           <div class="flex items-start gap-4">
             <img
               :src="siteStore.siteConfig.siteAvatar"
@@ -204,7 +266,7 @@
           </div>
         </div>
 
-        <div class="rules-card">
+        <div class="rules-card interactive-surface" @pointermove="handleSurfaceMove" @pointerleave="handleSurfaceLeave">
           <div class="mb-4 flex items-center gap-2 text-slate-900">
             <el-icon class="text-amber-500"><MagicStick /></el-icon>
             <h3 class="text-lg font-semibold">互链说明</h3>
@@ -267,11 +329,13 @@
                   <div
                     v-for="(step, index) in applySteps"
                     :key="step.title"
-                    class="step-card"
+                    class="step-card interactive-surface"
                     :class="{
                       'step-card-active': currentStep === index,
                       'step-card-complete': currentStep > index
                     }"
+                    @pointermove="handleSurfaceMove"
+                    @pointerleave="handleSurfaceLeave"
                   >
                     <div class="step-card__index">{{ index + 1 }}</div>
                     <div>
@@ -280,7 +344,7 @@
                     </div>
                   </div>
 
-                  <div class="interaction-card">
+                  <div class="interaction-card interactive-surface" @pointermove="handleSurfaceMove" @pointerleave="handleSurfaceLeave">
                     <div class="interaction-card__icon">
                       <el-icon><Compass /></el-icon>
                     </div>
@@ -291,7 +355,12 @@
                   </div>
                 </div>
 
-                <div class="form-shell" :class="`form-shell-step-${currentStep + 1}`">
+                <div
+                  class="form-shell interactive-surface"
+                  :class="`form-shell-step-${currentStep + 1}`"
+                  @pointermove="handleSurfaceMove"
+                  @pointerleave="handleSurfaceLeave"
+                >
                   <div class="form-shell__glow"></div>
                   <el-form label-position="top" class="relative z-10">
                     <div class="grid gap-4 md:grid-cols-2">
@@ -489,6 +558,27 @@ const heroPreviewLinks = computed(() => {
   const source = featured.length ? featured : friendLinks.value
   return source.slice(0, 3)
 })
+const orderedWallLinks = computed(() => {
+  const featured = friendLinks.value.filter(item => item.is_featured)
+  const regular = friendLinks.value.filter(item => !item.is_featured)
+  return [...featured, ...regular]
+})
+
+const buildAvatarWallSeed = (items: FriendLink[], minCount = 8) => {
+  if (!items.length) return []
+  const seed: FriendLink[] = []
+  while (seed.length < minCount) {
+    const nextItem = items[seed.length % items.length]
+    if (!nextItem) break
+    seed.push(nextItem)
+  }
+  return seed
+}
+
+const avatarWallPrimarySeed = computed(() => buildAvatarWallSeed(orderedWallLinks.value, 8))
+const avatarWallSecondarySeed = computed(() => buildAvatarWallSeed([...orderedWallLinks.value].reverse(), 8))
+const avatarWallPrimary = computed(() => [...avatarWallPrimarySeed.value, ...avatarWallPrimarySeed.value])
+const avatarWallSecondary = computed(() => [...avatarWallSecondarySeed.value, ...avatarWallSecondarySeed.value])
 
 const currentStep = computed(() => {
   if (submitSuccess.value) return 2
@@ -597,6 +687,34 @@ const handleSubmit = async () => {
   }
 }
 
+const handleSurfaceMove = (event: PointerEvent) => {
+  if (event.pointerType === 'touch') return
+  const element = event.currentTarget as HTMLElement | null
+  if (!element) return
+
+  const rect = element.getBoundingClientRect()
+  const offsetX = event.clientX - rect.left
+  const offsetY = event.clientY - rect.top
+  const percentX = offsetX / rect.width
+  const percentY = offsetY / rect.height
+  const rotateY = (percentX - 0.5) * 10
+  const rotateX = (0.5 - percentY) * 8
+
+  element.style.setProperty('--mouse-x', `${offsetX}px`)
+  element.style.setProperty('--mouse-y', `${offsetY}px`)
+  element.style.setProperty('--rotate-x', `${rotateX.toFixed(2)}deg`)
+  element.style.setProperty('--rotate-y', `${rotateY.toFixed(2)}deg`)
+}
+
+const handleSurfaceLeave = (event: PointerEvent) => {
+  const element = event.currentTarget as HTMLElement | null
+  if (!element) return
+  element.style.setProperty('--mouse-x', '50%')
+  element.style.setProperty('--mouse-y', '50%')
+  element.style.setProperty('--rotate-x', '0deg')
+  element.style.setProperty('--rotate-y', '0deg')
+}
+
 const formatDate = (value: string) => {
   if (!value) return ''
   return new Date(value).toLocaleDateString()
@@ -665,6 +783,46 @@ onMounted(() => {
   position: relative;
 }
 
+.interactive-surface {
+  position: relative;
+  isolation: isolate;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transform:
+    perspective(1400px)
+    translate3d(var(--surface-shift-x, 0px), var(--surface-lift, 0px), 0)
+    rotateX(var(--rotate-x, 0deg))
+    rotateY(var(--rotate-y, 0deg));
+  transition: transform 0.2s ease, box-shadow 0.28s ease, border-color 0.28s ease, background 0.28s ease;
+}
+
+.interactive-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(125, 211, 252, 0.22), transparent 26%),
+    radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.3), transparent 12%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.interactive-surface:hover {
+  --surface-lift: -2px;
+}
+
+.interactive-surface:hover::after {
+  opacity: 1;
+}
+
+.interactive-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
 .hero-links-card,
 .hero-side-note {
   border-radius: 24px;
@@ -697,6 +855,93 @@ onMounted(() => {
   color: #94a3b8;
   font-size: 0.92rem;
   line-height: 1.7;
+}
+
+.avatar-wall {
+  margin-top: 2rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  padding-top: 1.6rem;
+}
+
+.avatar-wall__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.avatar-wall__viewport {
+  position: relative;
+  overflow: hidden;
+  margin-top: 0.8rem;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.avatar-wall__viewport:hover .avatar-wall__track {
+  animation-play-state: paused;
+}
+
+.avatar-wall__viewport-secondary {
+  margin-top: 0.9rem;
+}
+
+.avatar-wall__track {
+  display: flex;
+  width: max-content;
+  gap: 1rem;
+}
+
+.avatar-wall__track-forward {
+  animation: marquee-left 30s linear infinite;
+}
+
+.avatar-wall__track-reverse {
+  animation: marquee-right 34s linear infinite;
+}
+
+.avatar-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 220px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 232, 240, 0.88);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.75rem 0.95rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.avatar-pill:hover {
+  --surface-lift: -3px;
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 16px 32px rgba(14, 165, 233, 0.12);
+}
+
+.avatar-pill-secondary {
+  background: rgba(248, 250, 252, 0.94);
+}
+
+.avatar-pill__logo {
+  height: 48px;
+  width: 48px;
+  flex-shrink: 0;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  object-fit: cover;
+}
+
+.avatar-pill__tag {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.1);
+  color: #0284c7;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .friend-cta {
@@ -820,7 +1065,7 @@ onMounted(() => {
 }
 
 .step-card-active {
-  transform: translateX(6px);
+  --surface-shift-x: 6px;
   border-color: rgba(56, 189, 248, 0.4);
   box-shadow: 0 14px 28px rgba(14, 165, 233, 0.1);
 }
@@ -859,7 +1104,7 @@ onMounted(() => {
 }
 
 .form-shell-step-2 {
-  transform: translateY(-2px);
+  --surface-lift: -2px;
   box-shadow: 0 16px 40px rgba(14, 165, 233, 0.08);
 }
 
@@ -968,7 +1213,7 @@ onMounted(() => {
 }
 
 .friend-card:hover {
-  transform: translateY(-6px);
+  --surface-lift: -6px;
   border-color: color-mix(in srgb, var(--friend-accent) 38%, white);
   box-shadow: 0 18px 36px color-mix(in srgb, var(--friend-accent) 18%, rgba(15, 23, 42, 0.08));
 }
@@ -1051,6 +1296,24 @@ onMounted(() => {
   }
 }
 
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @keyframes success-pop {
   0% {
     transform: scale(0.72);
@@ -1079,21 +1342,35 @@ onMounted(() => {
   .stat-chip__value {
     font-size: 1.4rem;
   }
+
+  .avatar-pill {
+    min-width: 180px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .friend-orb,
   .success-panel__badge,
   .submit-icon.is-spinning,
-  .friend-card:hover .friend-card__shine {
+  .friend-card:hover .friend-card__shine,
+  .avatar-wall__track {
     animation: none;
   }
 
   .friend-card,
   .friend-cta,
   .step-card,
-  .form-shell {
+  .form-shell,
+  .interactive-surface {
     transition: none;
+  }
+
+  .interactive-surface {
+    transform: none;
+  }
+
+  .interactive-surface::after {
+    display: none;
   }
 }
 </style>
