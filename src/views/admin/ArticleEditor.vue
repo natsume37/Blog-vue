@@ -28,6 +28,14 @@
               AI 草稿
             </el-button>
             <el-button
+              v-if="aiPluginEnabled"
+              class="!rounded-full !border-violet-200 !bg-violet-50 !px-5 !py-2.5 !text-violet-700 hover:!border-violet-300 hover:!bg-violet-100"
+              @click="openAICoverDialog"
+            >
+              <el-icon class="mr-2"><Picture /></el-icon>
+              AI 封面
+            </el-button>
+            <el-button
               v-if="isEdit && wechatPluginInstalled"
               class="!rounded-full !border-emerald-200 !bg-emerald-50 !px-5 !py-2.5 !text-emerald-700 hover:!border-emerald-300 hover:!bg-emerald-100"
               @click="openWeChatPublisher"
@@ -278,6 +286,7 @@
 
                 <div class="flex gap-2">
                   <el-button size="small" @click="extractImagesFromContent">从正文提取</el-button>
+                  <el-button v-if="aiPluginEnabled" size="small" @click="openAICoverDialog">AI 生成封面</el-button>
                   <el-button size="small" type="primary" @click="openCropper">裁剪封面</el-button>
                 </div>
 
@@ -394,6 +403,165 @@
         </section>
       </div>
     </el-drawer>
+
+    <el-dialog
+      v-if="aiPluginEnabled"
+      v-model="showAICoverDialog"
+      title="AI 生成封面预览"
+      width="980px"
+      class="editor-cover-dialog"
+      destroy-on-close
+    >
+      <div class="ai-cover-shell">
+        <section class="ai-cover-lead">
+          <div>
+            <div class="drawer-section__eyebrow">AI Cover</div>
+            <h3 class="ai-cover-lead__title">为当前文章生成封面预览</h3>
+            <p class="ai-cover-lead__desc">
+              基于标题、摘要、分类和标签生成多张候选图。选中后会直接写入封面字段，后续仍可继续裁剪。
+            </p>
+          </div>
+          <div v-if="form.cover" class="ai-cover-current">
+            <div class="ai-cover-current__label">当前封面</div>
+            <img :src="form.cover" class="ai-cover-current__image" />
+          </div>
+        </section>
+
+        <section class="grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
+          <article class="ai-cover-panel">
+            <div class="ai-cover-panel__head">
+              <div>
+                <div class="drawer-section__eyebrow">Prompt</div>
+                <div class="ai-cover-panel__title">生成参数</div>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <el-button size="small" :loading="aiCoverConfigLoading" @click="seedAICoverPrompt(true)">
+                  根据文章填充
+                </el-button>
+                <el-button size="small" type="primary" :loading="aiCoverLoading" @click="handleGenerateAICover">
+                  生成预览
+                </el-button>
+              </div>
+            </div>
+
+            <el-form label-position="top">
+              <el-form-item label="封面提示词">
+                <el-input
+                  v-model="aiCoverForm.prompt"
+                  type="textarea"
+                  :rows="6"
+                  placeholder="描述你想要的封面视觉风格、主体和构图。"
+                />
+              </el-form-item>
+              <el-form-item label="负面提示词">
+                <el-input
+                  v-model="aiCoverForm.negative_prompt"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="例如：不要文字、不要水印、不要低清晰度。"
+                />
+              </el-form-item>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <el-form-item label="尺寸">
+                  <el-select v-model="aiCoverForm.size" class="w-full">
+                    <el-option label="横图 1536x1024" value="1536x1024" />
+                    <el-option label="方图 1024x1024" value="1024x1024" />
+                    <el-option label="竖图 1024x1536" value="1024x1536" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="质量">
+                  <el-select v-model="aiCoverForm.quality" class="w-full">
+                    <el-option label="自动" value="auto" />
+                    <el-option label="低" value="low" />
+                    <el-option label="中" value="medium" />
+                    <el-option label="高" value="high" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="格式">
+                  <el-select v-model="aiCoverForm.output_format" class="w-full">
+                    <el-option label="PNG" value="png" />
+                    <el-option label="JPEG" value="jpeg" />
+                    <el-option label="WEBP" value="webp" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="背景">
+                  <el-select v-model="aiCoverForm.background" class="w-full">
+                    <el-option label="自动" value="auto" />
+                    <el-option label="纯色" value="opaque" />
+                    <el-option label="透明" value="transparent" />
+                  </el-select>
+                </el-form-item>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <div class="ai-cover-option-card">
+                  <div class="ai-cover-option-card__title">预览数量</div>
+                  <div class="ai-cover-option-card__desc">建议 2 到 3 张，兼顾选择空间和等待时间。</div>
+                  <el-input-number v-model="aiCoverForm.n" :min="1" :max="4" class="mt-3" />
+                </div>
+                <div class="ai-cover-option-card">
+                  <div class="ai-cover-option-card__title">自动入库</div>
+                  <div class="ai-cover-option-card__desc">优先生成可长期使用的封面地址，便于文章保存后直接展示。</div>
+                  <el-switch v-model="aiCoverForm.save_to_library" class="mt-3" />
+                </div>
+              </div>
+            </el-form>
+          </article>
+
+          <article class="ai-cover-panel">
+            <div class="ai-cover-panel__head">
+              <div>
+                <div class="drawer-section__eyebrow">Preview</div>
+                <div class="ai-cover-panel__title">封面候选图</div>
+              </div>
+              <div v-if="aiCoverResult" class="flex flex-wrap gap-2 text-xs text-slate-500">
+                <span class="editor-chip">{{ aiCoverResult.model }}</span>
+                <span class="editor-chip">{{ aiCoverResult.size }}</span>
+                <span class="editor-chip">{{ aiCoverResult.quality }}</span>
+              </div>
+            </div>
+
+            <div v-if="!aiCoverResult?.items?.length" class="ai-cover-empty">
+              输入提示词后点击“生成预览”，系统会返回多张封面候选图供你直接应用。
+            </div>
+
+            <div v-else class="ai-cover-grid">
+              <article
+                v-for="item in aiCoverResult.items"
+                :key="item.index"
+                class="ai-cover-result-card"
+              >
+                <div class="ai-cover-result-card__media">
+                  <img :src="item.url" :alt="item.prompt || 'AI cover preview'" class="h-full w-full object-cover" />
+                </div>
+                <div class="ai-cover-result-card__body">
+                  <div class="flex flex-wrap gap-2">
+                    <el-tag size="small" effect="plain">第 {{ item.index }} 张</el-tag>
+                    <el-tag size="small" effect="plain">{{ item.mime_type }}</el-tag>
+                    <el-tag v-if="item.saved" size="small" type="success" effect="plain">已入库</el-tag>
+                  </div>
+                  <p class="ai-cover-result-card__prompt">
+                    {{ item.prompt || aiCoverResult.prompt }}
+                  </p>
+                  <div class="ai-cover-result-card__meta">
+                    {{ item.resource_url ? '可长期使用的资源地址已生成。' : '当前结果用于预览，建议开启自动入库以获得稳定封面链接。' }}
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <el-button size="small" type="primary" @click="applyAICoverResult(item)">
+                      设为封面
+                    </el-button>
+                    <el-button size="small" @click="previewAICoverResult(item)">
+                      新窗口查看
+                    </el-button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </article>
+        </section>
+      </div>
+    </el-dialog>
 
     <el-dialog v-model="showImageSelector" title="选择图片" width="520px">
       <div v-if="contentImages.length > 0" class="grid grid-cols-3 gap-4">
@@ -519,6 +687,37 @@ const showVersionDrawer = ref(false)
 const versionLoading = ref(false)
 const versionRestoringId = ref<number | null>(null)
 const versions = ref<any[]>([])
+const showAICoverDialog = ref(false)
+const aiCoverLoading = ref(false)
+const aiCoverConfigLoading = ref(false)
+const aiCoverDefaultsLoaded = ref(false)
+const aiCoverResult = ref<{
+  ok: boolean
+  message: string
+  provider: string
+  model: string
+  prompt: string
+  negative_prompt?: string
+  revised_prompt?: string
+  size: string
+  quality: string
+  output_format: string
+  background: string
+  save_to_library: boolean
+  library_available: boolean
+  items: Array<{
+    index: number
+    prompt: string
+    url: string
+    source_url?: string
+    data_url?: string
+    mime_type: string
+    saved: boolean
+    resource_id?: number | null
+    resource_key?: string
+    resource_url?: string
+  }>
+} | null>(null)
 const aiKeywordsInput = ref('')
 const aiOutlineInput = ref('')
 const aiForm = ref({
@@ -529,6 +728,16 @@ const aiForm = ref({
   target_words: 1200,
   include_summary: true,
   existing_context: ''
+})
+const aiCoverForm = ref({
+  prompt: '',
+  negative_prompt: '',
+  size: '1536x1024' as '1024x1024' | '1536x1024' | '1024x1536',
+  quality: 'high' as 'auto' | 'low' | 'medium' | 'high',
+  output_format: 'png' as 'png' | 'jpeg' | 'webp',
+  background: 'auto' as 'auto' | 'opaque' | 'transparent',
+  n: 2,
+  save_to_library: true
 })
 
 // Form Data
@@ -586,6 +795,11 @@ const selectedCategoryName = computed(() => {
   const target = categories.value.find((item: any) => item.id === form.value.category_id)
   return target?.name || '未分类'
 })
+const selectedTagNames = computed(() =>
+  form.value.tag_ids
+    .map((id) => tags.value.find((item: any) => item.id === id)?.name || '')
+    .filter(Boolean),
+)
 const visibilityStateLabel = computed(() => {
   if (form.value.visibility === 'login') return '登录后可见'
   if (form.value.visibility === 'private') return '仅管理员可见'
@@ -804,6 +1018,100 @@ const openWeChatPublisher = () => {
   })
 }
 
+const defaultAICoverNegativePrompt = '不要文字、不要水印、不要 logo、不要低清晰度、不要杂乱背景、不要畸形结构'
+
+const buildAICoverPrompt = () => {
+  const title = form.value.title.trim()
+  const summary = form.value.summary.trim()
+  const category = selectedCategoryName.value !== '未分类' ? selectedCategoryName.value : ''
+  const tagNames = selectedTagNames.value.join('、')
+  const sections = [
+    title ? `为标题为《${title}》的中文博客文章设计一张封面插图` : '为一篇中文博客文章设计一张封面插图',
+    summary ? `文章摘要：${summary}` : '',
+    category ? `文章分类：${category}` : '',
+    tagNames ? `关键词：${tagNames}` : '',
+    '画面简洁克制，主体明确，具有现代感和设计感，适合技术博客头图，避免直接出现中文文字。',
+  ]
+  return sections.filter(Boolean).join('；')
+}
+
+const syncAICoverDefaults = async () => {
+  if (aiCoverConfigLoading.value || aiCoverDefaultsLoaded.value) return
+  aiCoverConfigLoading.value = true
+  try {
+    const res: any = await pluginStore.fetchPluginConfig('ai-assistant')
+    if (res.code === 200) {
+      const values = res.data?.values || res.data || {}
+      aiCoverForm.value = {
+        ...aiCoverForm.value,
+        size: '1536x1024',
+        quality: values?.ai_image_default_quality || 'high',
+        output_format: values?.ai_image_default_output_format || 'png',
+        background: values?.ai_image_default_background || 'auto',
+        save_to_library: values?.ai_image_save_to_library_default !== false,
+      }
+      aiCoverDefaultsLoaded.value = true
+    }
+  } catch (_error) {
+    // Keep local defaults when plugin config is unavailable.
+  } finally {
+    aiCoverConfigLoading.value = false
+  }
+}
+
+const seedAICoverPrompt = async (force = false) => {
+  await syncAICoverDefaults()
+  if (force || !aiCoverForm.value.prompt.trim()) {
+    aiCoverForm.value.prompt = buildAICoverPrompt()
+  }
+  if (force || !aiCoverForm.value.negative_prompt.trim()) {
+    aiCoverForm.value.negative_prompt = defaultAICoverNegativePrompt
+  }
+}
+
+const openAICoverDialog = async () => {
+  if (!aiPluginEnabled.value) {
+    ElMessage.warning('AI 插件未启用')
+    return
+  }
+  showAICoverDialog.value = true
+  await seedAICoverPrompt(false)
+}
+
+const resolveAICoverTarget = (item: {
+  url: string
+  source_url?: string
+  resource_url?: string
+}) => item.resource_url || item.source_url || item.url
+
+const previewAICoverResult = (item: {
+  url: string
+  source_url?: string
+  resource_url?: string
+}) => {
+  window.open(resolveAICoverTarget(item), '_blank', 'noopener,noreferrer')
+}
+
+const applyAICoverResult = (item: {
+  url: string
+  source_url?: string
+  resource_url?: string
+}) => {
+  const target = resolveAICoverTarget(item)
+  if (!target) {
+    ElMessage.warning('当前图片没有可用地址')
+    return
+  }
+  form.value.cover = target
+  cropperImg.value = target
+  showAICoverDialog.value = false
+  if (!item.resource_url && !item.source_url) {
+    ElMessage.warning('已设为封面，但当前地址可能不是长期链接，建议开启自动入库后重新生成')
+    return
+  }
+  ElMessage.success('已设为封面，可继续裁剪微调')
+}
+
 const normalizeListInput = (value: string) =>
   value
     .split(/[\n,，]/g)
@@ -892,6 +1200,42 @@ const handleGenerateSummary = async () => {
     ElMessage.error(getApiErrorMessage(error, 'AI 摘要生成异常'))
   } finally {
     aiSummaryLoading.value = false
+  }
+}
+
+const handleGenerateAICover = async () => {
+  if (!aiPluginEnabled.value) {
+    ElMessage.warning('AI 插件未启用')
+    return
+  }
+  if (aiCoverForm.value.prompt.trim().length < 4) {
+    ElMessage.warning('请先输入至少 4 个字符的封面提示词')
+    return
+  }
+
+  aiCoverLoading.value = true
+  try {
+    const res: any = await pluginStore.callPluginAction('ai-assistant', 'generate_image', {
+      prompt: aiCoverForm.value.prompt.trim(),
+      negative_prompt: aiCoverForm.value.negative_prompt.trim(),
+      size: aiCoverForm.value.size,
+      quality: aiCoverForm.value.quality,
+      output_format: aiCoverForm.value.output_format,
+      background: aiCoverForm.value.background,
+      n: Math.max(1, Math.min(4, Number(aiCoverForm.value.n || 2))),
+      save_to_library: aiCoverForm.value.save_to_library,
+    })
+    if (res.code !== 200 || !res.data?.result) {
+      ElMessage.error(res.msg || '封面生成失败')
+      return
+    }
+    aiCoverResult.value = res.data.result
+    ElMessage.success(res.data.result.message || '封面预览已生成')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error(getApiErrorMessage(error, '封面生成异常'))
+  } finally {
+    aiCoverLoading.value = false
   }
 }
 
@@ -1358,6 +1702,159 @@ onMounted(async () => {
   opacity: 1;
 }
 
+.ai-cover-shell {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.ai-cover-lead,
+.ai-cover-panel {
+  border-radius: 24px;
+  border: 1px solid var(--editor-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.9));
+}
+
+.ai-cover-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.15rem;
+}
+
+.ai-cover-lead__title {
+  margin-top: 0.45rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--editor-text);
+}
+
+.ai-cover-lead__desc {
+  margin-top: 0.45rem;
+  max-width: 48rem;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: var(--editor-muted);
+}
+
+.ai-cover-current {
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: white;
+}
+
+.ai-cover-current__label {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  padding: 0.7rem 0.85rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.ai-cover-current__image {
+  display: block;
+  height: 9rem;
+  width: 100%;
+  object-fit: cover;
+}
+
+.ai-cover-panel {
+  padding: 1rem;
+}
+
+.ai-cover-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.ai-cover-panel__title {
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--editor-text);
+}
+
+.ai-cover-option-card {
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(248, 250, 252, 0.88);
+  padding: 0.95rem 1rem;
+}
+
+.ai-cover-option-card__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--editor-text);
+}
+
+.ai-cover-option-card__desc {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--editor-muted);
+}
+
+.ai-cover-empty {
+  display: flex;
+  min-height: 17rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  background: rgba(248, 250, 252, 0.82);
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: var(--editor-muted);
+}
+
+.ai-cover-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.ai-cover-result-card {
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.88);
+  background: white;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.ai-cover-result-card__media {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.ai-cover-result-card__body {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.ai-cover-result-card__prompt {
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: #475569;
+}
+
+.ai-cover-result-card__meta {
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.88);
+  padding: 0.8rem 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--editor-muted);
+}
+
 .image-pick-card {
   aspect-ratio: 1 / 1;
   cursor: pointer;
@@ -1401,6 +1898,11 @@ onMounted(async () => {
 :deep(.editor-drawer .el-drawer__body) {
   background: #f8fafc;
   padding: 1rem 1rem 0;
+}
+
+:deep(.editor-cover-dialog .el-dialog__body) {
+  background: #f8fafc;
+  padding-top: 1rem;
 }
 
 /* Custom Scrollbar */
@@ -1547,6 +2049,21 @@ onMounted(async () => {
   .workspace-panel-divider {
     border-right: 1px solid var(--editor-border);
     border-bottom: none;
+  }
+
+  .ai-cover-lead {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ai-cover-current {
+    width: 14rem;
+    flex-shrink: 0;
+  }
+
+  .ai-cover-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
