@@ -230,31 +230,69 @@
       发布前建议检查摘要、封面、分类和 SEO 字段。若要快速调整文章状态或权限，请打开右上角“设置”面板。
     </section>
 
-    <el-drawer v-model="showSettings" title="文章设置" size="420px" class="editor-drawer">
-      <div class="drawer-stack">
-        <section class="drawer-section">
-          <div class="drawer-section__head">
-            <div class="drawer-section__eyebrow">Meta</div>
-            <h3 class="drawer-section__title">摘要与 SEO</h3>
+    <el-drawer v-model="showSettings" title="文章设置" size="560px" class="editor-drawer editor-settings-drawer">
+      <div class="drawer-stack drawer-stack-settings">
+        <section class="settings-overview-card">
+          <div class="settings-overview-card__header">
+            <div>
+              <div class="drawer-section__eyebrow">Overview</div>
+              <h3 class="settings-overview-card__title">把发布前的细节一次整理干净</h3>
+              <p class="settings-overview-card__desc">
+                在这里集中处理摘要、封面、SEO 和发布状态。设计上尽量少层级、少噪音，只保留真正影响上线质量的项。
+              </p>
+            </div>
+            <div class="settings-overview-card__status">
+              <span class="editor-chip editor-chip-dark">{{ form.is_published ? '准备发布' : '草稿中' }}</span>
+              <span class="editor-chip">{{ visibilityStateLabel }}</span>
+            </div>
           </div>
+
+          <div class="settings-overview-grid">
+            <div class="settings-overview-metric">
+              <div class="settings-overview-metric__label">封面</div>
+              <div class="settings-overview-metric__value">{{ form.cover ? '已就绪' : '待补充' }}</div>
+              <div class="settings-overview-metric__hint">{{ coverSourceLabel }}</div>
+            </div>
+            <div class="settings-overview-metric">
+              <div class="settings-overview-metric__label">SEO 完整度</div>
+              <div class="settings-overview-metric__value">{{ seoFilledCount }}/4</div>
+              <div class="settings-overview-metric__hint">摘要、标题、描述、关键词</div>
+            </div>
+            <div class="settings-overview-metric">
+              <div class="settings-overview-metric__label">标签</div>
+              <div class="settings-overview-metric__value">{{ form.tag_ids.length }}</div>
+              <div class="settings-overview-metric__hint">{{ selectedTagNames.slice(0, 3).join(' / ') || '还未选择标签' }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="drawer-section drawer-section-rich">
+          <div class="drawer-section__head drawer-section__head-rich">
+            <div>
+              <div class="drawer-section__eyebrow">Meta</div>
+              <h3 class="drawer-section__title">摘要与 SEO</h3>
+            </div>
+            <el-button v-if="aiPluginEnabled" size="small" :loading="aiSummaryLoading" @click="handleGenerateSummary">
+              AI 一键摘要
+            </el-button>
+          </div>
+
           <el-form label-position="top">
             <el-form-item label="文章摘要">
-              <el-input v-model="form.summary" type="textarea" :rows="3" placeholder="请输入文章摘要（可选）" />
-              <div class="mt-2">
-                <el-button v-if="aiPluginEnabled" size="small" :loading="aiSummaryLoading" @click="handleGenerateSummary">
-                  AI 一键摘要
-                </el-button>
-              </div>
+              <el-input v-model="form.summary" type="textarea" :rows="4" placeholder="用 1 到 2 句话交代文章核心价值。" />
             </el-form-item>
 
-            <el-form-item label="URL Slug">
-              <el-input v-model="form.slug" placeholder="例如: vue3-component-architecture" />
-            </el-form-item>
-            <el-form-item label="SEO 标题">
-              <el-input v-model="form.seo_title" placeholder="可选，默认使用文章标题" />
-            </el-form-item>
+            <div class="grid gap-4 md:grid-cols-2">
+              <el-form-item label="URL Slug">
+                <el-input v-model="form.slug" placeholder="例如: vue3-component-architecture" />
+              </el-form-item>
+              <el-form-item label="SEO 标题">
+                <el-input v-model="form.seo_title" placeholder="可选，默认使用文章标题" />
+              </el-form-item>
+            </div>
+
             <el-form-item label="SEO 描述">
-              <el-input v-model="form.seo_description" type="textarea" :rows="2" placeholder="可选，默认使用文章摘要" />
+              <el-input v-model="form.seo_description" type="textarea" :rows="3" placeholder="搜索结果里优先展示的简短说明。" />
             </el-form-item>
             <el-form-item label="SEO 关键词">
               <el-input v-model="form.seo_keywords" placeholder="多个关键词用英文逗号分隔" />
@@ -262,38 +300,61 @@
           </el-form>
         </section>
 
-        <section class="drawer-section">
+        <section class="drawer-section drawer-section-rich">
           <div class="drawer-section__head">
             <div class="drawer-section__eyebrow">Presentation</div>
             <h3 class="drawer-section__title">分类、标签与封面</h3>
           </div>
-          <el-form label-position="top">
-            <el-form-item label="分类">
-              <el-select v-model="form.category_id" placeholder="选择分类" class="w-full">
-                <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
-              </el-select>
-            </el-form-item>
 
-            <el-form-item label="标签">
-              <el-select v-model="form.tag_ids" multiple placeholder="选择标签" class="w-full">
-                <el-option v-for="item in tags" :key="item.id" :label="item.name" :value="item.id" />
-              </el-select>
-            </el-form-item>
+          <el-form label-position="top">
+            <div class="grid gap-4 md:grid-cols-2">
+              <el-form-item label="分类">
+                <el-select v-model="form.category_id" placeholder="选择分类" class="w-full">
+                  <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+                </el-select>
+              </el-form-item>
+
+              <el-form-item label="标签">
+                <el-select v-model="form.tag_ids" multiple placeholder="选择标签" class="w-full">
+                  <el-option v-for="item in tags" :key="item.id" :label="item.name" :value="item.id" />
+                </el-select>
+              </el-form-item>
+            </div>
 
             <el-form-item label="封面图">
-              <div class="space-y-3 w-full">
-                <el-input v-model="form.cover" placeholder="输入图片 URL" />
-
-                <div class="flex gap-2">
-                  <el-button size="small" @click="extractImagesFromContent">从正文提取</el-button>
-                  <el-button v-if="aiPluginEnabled" size="small" @click="openAICoverDialog">AI 生成封面</el-button>
-                  <el-button size="small" type="primary" @click="openCropper">裁剪封面</el-button>
+              <div class="cover-workbench">
+                <div class="cover-workbench__preview">
+                  <div v-if="form.cover" class="cover-preview cover-preview-static group">
+                    <img :src="form.cover" class="h-full w-full object-cover" />
+                    <div class="cover-preview__mask">
+                      <el-button type="danger" circle size="small" @click="form.cover = ''"><el-icon><Delete /></el-icon></el-button>
+                    </div>
+                  </div>
+                  <div v-else class="cover-workbench__empty">
+                    <div class="cover-workbench__empty-title">还没有封面</div>
+                    <div class="cover-workbench__empty-desc">可以从图库选择、AI 生成，或从正文里直接提取一张图。</div>
+                  </div>
                 </div>
 
-                <div v-if="form.cover" class="cover-preview group">
-                  <img :src="form.cover" class="h-full w-full object-cover" />
-                  <div class="cover-preview__mask">
-                    <el-button type="danger" circle size="small" @click="form.cover = ''"><el-icon><Delete /></el-icon></el-button>
+                <div class="cover-workbench__controls">
+                  <el-input v-model="form.cover" placeholder="输入图片 URL，或使用下方快捷动作" />
+
+                  <div class="cover-action-grid">
+                    <el-button @click="openCoverPicker">从图库选择</el-button>
+                    <el-button @click="extractImagesFromContent">从正文提取</el-button>
+                    <el-button v-if="aiPluginEnabled" @click="openAICoverDialog">AI 生成封面</el-button>
+                    <el-button type="primary" @click="openCropper">裁剪封面</el-button>
+                  </div>
+
+                  <div class="cover-workbench__meta">
+                    <div class="cover-workbench__meta-item">
+                      <span>当前来源</span>
+                      <strong>{{ coverSourceLabel }}</strong>
+                    </div>
+                    <div class="cover-workbench__meta-item">
+                      <span>推荐比例</span>
+                      <strong>16:9</strong>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -301,41 +362,42 @@
           </el-form>
         </section>
 
-        <section class="drawer-section">
+        <section class="drawer-section drawer-section-rich">
           <div class="drawer-section__head">
             <div class="drawer-section__eyebrow">Publish</div>
             <h3 class="drawer-section__title">发布与权限</h3>
           </div>
-          <div class="drawer-switch-list">
-            <div class="drawer-switch-item">
+
+          <div class="drawer-switch-grid">
+            <div class="drawer-switch-item drawer-switch-item-card">
               <div>
                 <div class="drawer-switch-item__title">是否发布</div>
                 <div class="drawer-switch-item__desc">切换文章的前台展示状态</div>
               </div>
               <el-switch v-model="form.is_published" />
             </div>
-            <div class="drawer-switch-item">
+            <div class="drawer-switch-item drawer-switch-item-card">
               <div>
                 <div class="drawer-switch-item__title">隐藏文章</div>
                 <div class="drawer-switch-item__desc">不显示在列表，但保留访问链接</div>
               </div>
               <el-switch v-model="form.is_hidden" />
             </div>
-            <div class="drawer-switch-item">
+            <div class="drawer-switch-item drawer-switch-item-card">
               <div>
                 <div class="drawer-switch-item__title">置顶文章</div>
                 <div class="drawer-switch-item__desc">在列表中优先显示</div>
               </div>
               <el-switch v-model="form.is_top" />
             </div>
-            <div class="drawer-switch-item">
+            <div class="drawer-switch-item drawer-switch-item-card">
               <div>
                 <div class="drawer-switch-item__title">推荐文章</div>
                 <div class="drawer-switch-item__desc">可在首页推荐位展示</div>
               </div>
               <el-switch v-model="form.is_recommend" />
             </div>
-            <div class="drawer-switch-item">
+            <div class="drawer-switch-item drawer-switch-item-card drawer-switch-item-wide">
               <div>
                 <div class="drawer-switch-item__title">密码保护</div>
                 <div class="drawer-switch-item__desc">访问前需要回答验证问题</div>
@@ -344,7 +406,7 @@
             </div>
           </div>
 
-          <el-form label-position="top" class="mt-4">
+          <el-form label-position="top" class="mt-5">
             <el-form-item label="可见性">
               <el-select v-model="form.visibility" class="w-full">
                 <el-option label="公开可见" value="public" />
@@ -353,12 +415,14 @@
               </el-select>
             </el-form-item>
             <template v-if="form.is_protected">
-              <el-form-item label="验证问题">
-                <el-input v-model="form.protection_question" placeholder="例如：我的微信号是多少？" />
-              </el-form-item>
-              <el-form-item label="验证答案">
-                <el-input v-model="form.protection_answer" placeholder="访问者需输入此答案" />
-              </el-form-item>
+              <div class="grid gap-4 md:grid-cols-2">
+                <el-form-item label="验证问题">
+                  <el-input v-model="form.protection_question" placeholder="例如：我的微信号是多少？" />
+                </el-form-item>
+                <el-form-item label="验证答案">
+                  <el-input v-model="form.protection_answer" placeholder="访问者需输入此答案" />
+                </el-form-item>
+              </div>
             </template>
           </el-form>
         </section>
@@ -800,6 +864,22 @@ const selectedTagNames = computed(() =>
     .map((id) => tags.value.find((item: any) => item.id === id)?.name || '')
     .filter(Boolean),
 )
+const seoFilledCount = computed(() =>
+  [
+    form.value.summary,
+    form.value.seo_title,
+    form.value.seo_description,
+    form.value.seo_keywords,
+  ].filter((item) => String(item || '').trim()).length,
+)
+const coverSourceLabel = computed(() => {
+  const cover = (form.value.cover || '').trim()
+  if (!cover) return '未设置封面'
+  if (cover.startsWith('data:image/')) return '裁剪后的本地封面'
+  if (cover.includes('/img/ai/')) return 'AI 入库封面'
+  if (cover.includes('/api/') || cover.includes('/img/') || cover.includes('/upload')) return '图库资源'
+  return '外部图片地址'
+})
 const visibilityStateLabel = computed(() => {
   if (form.value.visibility === 'login') return '登录后可见'
   if (form.value.visibility === 'private') return '仅管理员可见'
@@ -906,13 +986,27 @@ const handleScroll = () => {
 // Resource Manager
 const resourceManagerRef = ref<any>(null)
 const currentMediaType = ref('')
+const resourcePickerMode = ref<'content' | 'cover'>('content')
 
-const openMediaManager = (type: string) => {
+const openMediaManager = (type: string, mode: 'content' | 'cover' = 'content') => {
   currentMediaType.value = type
-  resourceManagerRef.value?.open(type)
+  resourcePickerMode.value = mode
+  resourceManagerRef.value?.open(type, { scene: mode })
+}
+
+const openCoverPicker = () => {
+  openMediaManager('image', 'cover')
 }
 
 const handleResourceSelect = (item: any) => {
+  if (resourcePickerMode.value === 'cover') {
+    form.value.cover = item.url
+    cropperImg.value = item.url
+    resourcePickerMode.value = 'content'
+    ElMessage.success('已从图库选择封面')
+    return
+  }
+
   // 根据实际资源类型决定插入格式，而不是按钮类型
   const mediaType = item.media_type || currentMediaType.value
   
@@ -926,6 +1020,7 @@ const handleResourceSelect = (item: any) => {
     // 其他类型作为链接插入
     insertMarkdown(`[${item.filename}](${item.url})`, '')
   }
+  resourcePickerMode.value = 'content'
 }
 
 // 导出文章
@@ -1588,10 +1683,13 @@ onMounted(async () => {
 
 .workspace-panel__body-editor {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.88));
+  overflow: hidden;
 }
 
 .workspace-panel__body-preview {
   background: linear-gradient(180deg, rgba(248, 250, 252, 0.88), rgba(255, 255, 255, 0.98));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .workspace-textarea {
@@ -1609,6 +1707,8 @@ onMounted(async () => {
 }
 
 .preview-shell {
+  min-height: 100%;
+  box-sizing: border-box;
   padding: 1.5rem 1.75rem;
 }
 
@@ -1632,6 +1732,10 @@ onMounted(async () => {
   padding-bottom: 1.5rem;
 }
 
+.drawer-stack-settings {
+  gap: 1.15rem;
+}
+
 .drawer-section {
   border-radius: 24px;
   border: 1px solid var(--editor-border);
@@ -1639,8 +1743,21 @@ onMounted(async () => {
   padding: 1rem;
 }
 
+.drawer-section-rich {
+  padding: 1.15rem;
+  box-shadow: 0 18px 40px rgba(148, 163, 184, 0.08);
+}
+
 .drawer-section__head {
   margin-bottom: 1rem;
+}
+
+.drawer-section__head-rich {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
 }
 
 .drawer-section__title {
@@ -1650,9 +1767,86 @@ onMounted(async () => {
   color: var(--editor-text);
 }
 
+.settings-overview-card {
+  display: grid;
+  gap: 1rem;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.94));
+  padding: 1.15rem;
+  box-shadow: 0 24px 60px rgba(148, 163, 184, 0.12);
+}
+
+.settings-overview-card__header {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.settings-overview-card__title {
+  margin-top: 0.5rem;
+  font-size: 1.18rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--editor-text);
+}
+
+.settings-overview-card__desc {
+  margin-top: 0.55rem;
+  max-width: 32rem;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--editor-muted);
+}
+
+.settings-overview-card__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.settings-overview-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.settings-overview-metric {
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.95rem 1rem;
+}
+
+.settings-overview-metric__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.settings-overview-metric__value {
+  margin-top: 0.65rem;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--editor-text);
+}
+
+.settings-overview-metric__hint {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--editor-muted);
+}
+
 .drawer-switch-list {
   display: grid;
   gap: 0.75rem;
+}
+
+.drawer-switch-grid {
+  display: grid;
+  gap: 0.8rem;
 }
 
 .drawer-switch-item {
@@ -1663,6 +1857,15 @@ onMounted(async () => {
   border-radius: 18px;
   background: #f8fafc;
   padding: 0.9rem 1rem;
+}
+
+.drawer-switch-item-card {
+  min-height: 5.3rem;
+  align-items: flex-start;
+}
+
+.drawer-switch-item-wide {
+  width: 100%;
 }
 
 .drawer-switch-item__title {
@@ -1700,6 +1903,86 @@ onMounted(async () => {
 
 .cover-preview:hover .cover-preview__mask {
   opacity: 1;
+}
+
+.cover-preview-static {
+  min-height: 13.5rem;
+}
+
+.cover-workbench {
+  display: grid;
+  gap: 1rem;
+}
+
+.cover-workbench__preview {
+  min-height: 13.5rem;
+}
+
+.cover-workbench__empty {
+  display: grid;
+  align-content: center;
+  gap: 0.45rem;
+  min-height: 13.5rem;
+  border-radius: 20px;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.92));
+  padding: 1.4rem;
+}
+
+.cover-workbench__empty-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--editor-text);
+}
+
+.cover-workbench__empty-desc {
+  max-width: 22rem;
+  font-size: 0.86rem;
+  line-height: 1.7;
+  color: var(--editor-muted);
+}
+
+.cover-workbench__controls {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cover-action-grid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cover-workbench__meta {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cover-workbench__meta-item {
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #f8fafc;
+  padding: 0.9rem 0.95rem;
+}
+
+.cover-workbench__meta-item span {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.cover-workbench__meta-item strong {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--editor-text);
 }
 
 .ai-cover-shell {
@@ -1900,6 +2183,16 @@ onMounted(async () => {
   padding: 1rem 1rem 0;
 }
 
+:deep(.editor-settings-drawer .el-drawer__header) {
+  padding-bottom: 1rem;
+}
+
+:deep(.editor-settings-drawer .el-drawer__body) {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 18%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
 :deep(.editor-cover-dialog .el-dialog__body) {
   background: #f8fafc;
   padding-top: 1rem;
@@ -2051,6 +2344,28 @@ onMounted(async () => {
     border-bottom: none;
   }
 
+  .settings-overview-card__header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: flex-start;
+  }
+
+  .settings-overview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .drawer-switch-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .drawer-switch-item-wide {
+    grid-column: span 2;
+  }
+
+  .cover-workbench {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    align-items: start;
+  }
+
   .ai-cover-lead {
     flex-direction: row;
     align-items: center;
@@ -2079,6 +2394,11 @@ onMounted(async () => {
   .workspace-textarea,
   .preview-shell {
     padding: 1.1rem;
+  }
+
+  .cover-action-grid,
+  .cover-workbench__meta {
+    grid-template-columns: 1fr;
   }
 }
 </style>

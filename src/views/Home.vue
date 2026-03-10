@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-20">
+    <div class="max-w-[90rem] mx-auto px-5 sm:px-6 lg:px-8 xl:px-10">
       <div class="flex flex-col lg:flex-row gap-8">
         <!-- Left Sidebar -->
         <aside class="w-full lg:w-[280px] space-y-6 flex-shrink-0">

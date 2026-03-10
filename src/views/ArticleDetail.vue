@@ -1,12 +1,12 @@
 <template>
   <div class="min-h-screen bg-white">
     <!-- Loading -->
-    <div v-if="loading" class="pt-20 max-w-4xl mx-auto px-4 py-12">
+    <div v-if="loading" class="pt-20 max-w-5xl mx-auto px-5 sm:px-6 py-12">
       <!-- Loading skeleton ... -->
     </div>
 
     <!-- Password Protection -->
-    <div v-else-if="isLocked" class="max-w-4xl mx-auto px-4 py-20 text-center pt-32">
+    <div v-else-if="isLocked" class="max-w-5xl mx-auto px-5 sm:px-6 py-20 text-center pt-32">
        <div class="bg-white rounded-2xl shadow-lg p-10 max-w-md mx-auto border border-gray-100">
          <div class="mb-6 bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-blue-500">
            <el-icon :size="40"><Lock /></el-icon>
@@ -43,7 +43,7 @@
         
         <!-- Title & Meta Overlay -->
         <div class="absolute bottom-0 left-0 w-full p-8 pb-12 text-white">
-           <div class="max-w-4xl mx-auto">
+           <div class="max-w-[72rem] mx-auto px-2 sm:px-4">
              <!-- Tags -->
              <div v-if="article.tags && article.tags.length > 0" class="flex flex-wrap gap-2 mb-6">
                 <span 
@@ -82,7 +82,7 @@
       </div>
 
       <!-- Main Content -->
-      <article class="max-w-4xl mx-auto px-4 py-12 relative">
+      <article class="max-w-[78rem] mx-auto px-5 sm:px-6 lg:px-8 py-12 relative">
          <!-- TOC Button -->
          <div class="fixed left-8 top-1/2 -translate-y-1/2 z-40 hidden xl:block">
             <el-tooltip content="文章目录" placement="right">
@@ -105,14 +105,19 @@
             </button>
          </div>
 
-         <div class="w-full">
+         <div class="w-full max-w-[56rem] mx-auto">
             <!-- Summary -->
             <div v-if="article.summary" class="bg-gray-50 border-l-4 border-miyazaki-blue p-4 rounded-r-lg text-gray-600 italic mb-8 text-base">
               {{ article.summary }}
             </div>
             
             <!-- Content -->
-            <div class="prose prose-lg max-w-none prose-headings:font-serif prose-a:text-miyazaki-blue prose-img:rounded-xl" v-html="renderedContent">
+            <div
+              ref="articleContentRef"
+              class="prose prose-lg max-w-none prose-headings:font-serif prose-a:text-miyazaki-blue prose-img:rounded-xl article-prose"
+              @click="handleArticleContentClick"
+              v-html="renderedContent"
+            >
             </div>
             
             <!-- Footer Actions -->
@@ -169,7 +174,7 @@
     </div>
     
     <!-- Not Found -->
-    <div v-else class="max-w-4xl mx-auto px-4 py-20 text-center pt-32">
+    <div v-else class="max-w-5xl mx-auto px-5 sm:px-6 py-20 text-center pt-32">
       <el-icon class="text-6xl text-gray-300 mb-4"><Document /></el-icon>
       <p class="text-gray-500 mb-4">文章不存在或已被删除</p>
       <router-link to="/" class="text-miyazaki-blue hover:underline">返回首页</router-link>
@@ -204,6 +209,15 @@
         </div>
       </div>
     </el-drawer>
+
+    <ElImageViewer
+      v-if="imageViewerVisible"
+      :url-list="imageViewerUrls"
+      :initial-index="imageViewerIndex"
+      :hide-on-click-modal="true"
+      :infinite="true"
+      @close="imageViewerVisible = false"
+    />
   </div>
 </template>
 
@@ -211,7 +225,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Calendar, Folder, View, Star, Share, Document, ChatDotSquare, List, Lock, Key } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElImageViewer, ElMessage } from 'element-plus'
 import { getArticle, getArticles, likeArticle, unlikeArticle, getArticleLikeStatus } from '../api'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -231,6 +245,10 @@ const isLiked = ref(false)
 const liking = ref(false)
 const showToc = ref(false)
 const toc = ref<any[]>([])
+const articleContentRef = ref<HTMLElement | null>(null)
+const imageViewerVisible = ref(false)
+const imageViewerUrls = ref<string[]>([])
+const imageViewerIndex = ref(0)
 
 const isLocked = ref(false)
 const protectionQuestion = ref('')
@@ -442,6 +460,28 @@ const handleShare = () => {
   }
 }
 
+const handleArticleContentClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null
+  const clickedImage = target?.closest('img')
+  if (!clickedImage || !articleContentRef.value?.contains(clickedImage)) {
+    return
+  }
+
+  const images = Array.from(articleContentRef.value.querySelectorAll('img[src]'))
+  const urls = images
+    .map((image) => image.getAttribute('src') || '')
+    .filter(Boolean)
+
+  if (urls.length === 0) {
+    return
+  }
+
+  const clickedSrc = clickedImage.getAttribute('src') || ''
+  imageViewerUrls.value = urls
+  imageViewerIndex.value = Math.max(0, urls.findIndex((url) => url === clickedSrc))
+  imageViewerVisible.value = true
+}
+
 // 监听路由变化
 watch(() => route.params.id, () => {
   fetchArticle()
@@ -463,6 +503,13 @@ onMounted(() => {
 :deep(.prose img) {
   margin: 1.5rem auto;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  cursor: zoom-in;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+:deep(.article-prose img:hover) {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.16);
 }
 
 /* 确保加粗正确渲染 */

@@ -6,7 +6,7 @@
       (isTransparentPage && isTop) ? 'bg-gradient-to-b from-black/30 to-transparent border-transparent shadow-none py-4' : 'bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm py-0'
     ]"
   >
-    <div class="w-full mx-auto px-6 sm:px-10 lg:px-16 xl:px-24 2xl:px-32">
+    <div class="w-full max-w-[90rem] mx-auto px-5 sm:px-6 lg:px-8 xl:px-10">
       <div class="flex justify-between h-16 items-center">
         <div class="flex-shrink-0 flex items-center cursor-pointer gap-3" @click="$router.push('/')">
           <div class="w-9 h-9 bg-gradient-to-br from-miyazaki-blue to-miyazaki-green rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md transform rotate-3 hover:rotate-0 transition-transform font-display">

@@ -2,7 +2,7 @@
   <!-- 弹窗模式 -->
   <el-dialog
     v-model="dialogVisible"
-    title="选择资源"
+    :title="dialogTitle"
     width="800px"
     :close-on-click-modal="false"
     append-to-body
@@ -25,10 +25,29 @@
           :on-change="handleUpload"
           multiple
         >
-          <el-button type="primary" size="small">
+          <el-button type="primary" size="small" :loading="uploading">
             <el-icon class="mr-1"><Upload /></el-icon> 上传
           </el-button>
         </el-upload>
+      </div>
+
+      <div
+        class="mb-3 rounded-2xl border border-dashed px-4 py-3 transition-all duration-300"
+        :class="dragActive ? 'border-sky-400 bg-sky-50 shadow-sm' : 'border-slate-200 bg-white/80'"
+        @dragenter.prevent="handleDragEnter"
+        @dragover.prevent="handleDragEnter"
+        @dragleave.prevent="handleDragLeave"
+        @drop.prevent="handleDrop"
+      >
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div class="text-sm font-semibold text-slate-700">拖拽文件到这里，或直接粘贴截图上传</div>
+            <div class="mt-1 text-xs leading-6 text-slate-500">当前弹窗打开时支持 Ctrl/Cmd + V。图片、视频、音频会自动归类到图库。</div>
+          </div>
+          <div class="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-medium text-slate-600">
+            {{ uploading ? '上传中...' : '拖拽 / 粘贴 / 点击上传' }}
+          </div>
+        </div>
       </div>
 
       <!-- 资源网格 -->
@@ -64,7 +83,7 @@
         <div>
           <el-button @click="dialogVisible = false">取消</el-button>
           <el-button type="primary" :disabled="!selectedItem" @click="confirmSelect">
-            插入
+            {{ confirmButtonText }}
           </el-button>
         </div>
       </div>
@@ -73,11 +92,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useResourceStore, type ResourceItem } from '../stores/resource'
-import { uploadToQiniu } from '../utils/upload'
+import { extractClipboardFiles, uploadBatchToQiniu } from '../utils/upload'
 import ResourceGrid from './ResourceGrid.vue'
 
 const emit = defineEmits<{
@@ -90,14 +109,80 @@ const dialogVisible = ref(false)
 const selectedId = ref<number | null>(null)
 const selectedItem = ref<ResourceItem | null>(null)
 const localFilter = ref('')
+const scene = ref<'content' | 'cover'>('content')
+const dragActive = ref(false)
+const dragDepth = ref(0)
+const uploading = ref(false)
+
+const dialogTitle = computed(() => (scene.value === 'cover' ? '选择封面' : '选择资源'))
+const confirmButtonText = computed(() => (scene.value === 'cover' ? '设为封面' : '插入'))
+
+const uploadFiles = async (files: File[] | FileList) => {
+  const normalizedFiles = Array.from(files || []).filter((file): file is File => Boolean(file))
+  if (normalizedFiles.length === 0) {
+    return
+  }
+
+  uploading.value = true
+  try {
+    await uploadBatchToQiniu(normalizedFiles)
+    ElMessage.success(`已上传 ${normalizedFiles.length} 个文件`)
+    await store.fetchData()
+  } catch {
+    ElMessage.error('上传失败')
+  } finally {
+    uploading.value = false
+  }
+}
+
+const handlePaste = async (event: ClipboardEvent) => {
+  if (!dialogVisible.value) {
+    return
+  }
+
+  const files = extractClipboardFiles(event)
+  if (files.length === 0) {
+    return
+  }
+
+  event.preventDefault()
+  await uploadFiles(files)
+}
+
+const handleDragEnter = () => {
+  dragDepth.value += 1
+  dragActive.value = true
+}
+
+const handleDragLeave = () => {
+  dragDepth.value = Math.max(0, dragDepth.value - 1)
+  if (dragDepth.value === 0) {
+    dragActive.value = false
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  dragDepth.value = 0
+  dragActive.value = false
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) {
+    return
+  }
+
+  await uploadFiles(files)
+}
 
 // 监听弹窗打开
 watch(dialogVisible, (val) => {
   if (val) {
     store.fetchData()
+    window.addEventListener('paste', handlePaste)
   } else {
     selectedId.value = null
     selectedItem.value = null
+    dragDepth.value = 0
+    dragActive.value = false
+    window.removeEventListener('paste', handlePaste)
   }
 })
 
@@ -147,14 +232,8 @@ const handleViewRefs = async (item: ResourceItem) => {
 const handleUpload = async (file: any) => {
   const rawFile = file.raw
   if (!rawFile) return
-  
-  try {
-    await uploadToQiniu(rawFile)
-    ElMessage.success('上传成功')
-    store.fetchData()
-  } catch {
-    ElMessage.error('上传失败')
-  }
+
+  await uploadFiles([rawFile])
 }
 
 const confirmSelect = () => {
@@ -168,13 +247,19 @@ const confirmSelect = () => {
 }
 
 // 暴露打开方法
-const open = (type?: string) => {
+const open = (type?: string, options?: { scene?: 'content' | 'cover' }) => {
   if (type === 'image') localFilter.value = 'img'
   else if (type === 'video') localFilter.value = 'video'
   else localFilter.value = ''
+
+  scene.value = options?.scene || 'content'
   
   dialogVisible.value = true
 }
 
 defineExpose({ open })
+
+onUnmounted(() => {
+  window.removeEventListener('paste', handlePaste)
+})
 </script>

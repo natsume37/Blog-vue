@@ -53,6 +53,14 @@
         <!-- 悬浮操作按钮 -->
         <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 z-10">
           <button
+            v-if="item.media_type === 'img'"
+            class="w-6 h-6 rounded bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-sky-500"
+            @click.stop="openPreview(item)"
+            title="放大预览"
+          >
+            <el-icon :size="12"><ZoomIn /></el-icon>
+          </button>
+          <button
             class="w-6 h-6 rounded bg-white/90 shadow-sm flex items-center justify-center text-gray-500 hover:text-amber-500"
             @click.stop="$emit('view-refs', item)"
             title="查看引用"
@@ -89,14 +97,24 @@
     <el-icon :size="48" class="mb-4 text-gray-200"><Picture /></el-icon>
     <span class="text-sm">暂无资源</span>
   </div>
+
+  <ElImageViewer
+    v-if="previewVisible"
+    :url-list="previewUrls"
+    :initial-index="previewIndex"
+    :hide-on-click-modal="true"
+    :infinite="true"
+    @close="previewVisible = false"
+  />
 </template>
 
 <script setup lang="ts">
-import { Loading, VideoPlay, Headset, Document, Check, Link, Picture, Delete, DocumentCopy } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { computed, ref } from 'vue'
+import { Loading, VideoPlay, Headset, Document, Check, Link, Picture, Delete, DocumentCopy, ZoomIn } from '@element-plus/icons-vue'
+import { ElImageViewer, ElMessage } from 'element-plus'
 import type { ResourceItem } from '../stores/resource'
 
-defineProps<{
+const props = defineProps<{
   items: ResourceItem[]
   selectedIds: number[]
 }>()
@@ -108,10 +126,29 @@ defineEmits<{
   'image-error': [event: Event, item: ResourceItem]
 }>()
 
+const previewVisible = ref(false)
+const previewIndex = ref(0)
+
+const previewItems = computed(() =>
+  props.items.filter((item) => item.media_type === 'img' && (item.displayUrl || item.url)),
+)
+
+const previewUrls = computed(() => previewItems.value.map((item) => item.displayUrl || item.url))
+
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+}
+
+const openPreview = (item: ResourceItem) => {
+  const index = previewItems.value.findIndex((entry) => entry.id === item.id)
+  if (index === -1) {
+    return
+  }
+
+  previewIndex.value = index
+  previewVisible.value = true
 }
 
 const copyLink = async (item: ResourceItem) => {

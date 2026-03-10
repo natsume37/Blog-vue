@@ -5,6 +5,23 @@ import { getUploadToken, getPrivateUrl } from '../api'
 import { createResource } from '../api/resource'
 import { ElMessage } from 'element-plus'
 
+const toFileArray = (files: File[] | FileList): File[] => {
+  return Array.from(files || []).filter((file): file is File => Boolean(file && file.size >= 0))
+}
+
+export const extractClipboardFiles = (event: ClipboardEvent): File[] => {
+  const clipboardFiles = toFileArray(event.clipboardData?.files || [])
+  if (clipboardFiles.length > 0) {
+    return clipboardFiles
+  }
+
+  const items = Array.from(event.clipboardData?.items || [])
+  return items
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => Boolean(file))
+}
+
 export const uploadToQiniu = async (file: File): Promise<string> => {
   try {
     // 1. 获取凭证
@@ -97,4 +114,16 @@ export const uploadToQiniu = async (file: File): Promise<string> => {
     ElMessage.error('上传失败')
     throw error
   }
+}
+
+export const uploadBatchToQiniu = async (files: File[] | FileList): Promise<string[]> => {
+  const normalizedFiles = toFileArray(files)
+  const uploadedUrls: string[] = []
+
+  for (const file of normalizedFiles) {
+    const url = await uploadToQiniu(file)
+    uploadedUrls.push(url)
+  }
+
+  return uploadedUrls
 }

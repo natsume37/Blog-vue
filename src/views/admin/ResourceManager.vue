@@ -1,55 +1,84 @@
 <template>
-  <div class="p-6 h-full flex flex-col bg-gray-50">
+  <div class="p-6 h-full flex flex-col bg-slate-50/80">
     <!-- 顶部工具栏 -->
-    <div class="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm">
-      <div class="flex items-center gap-4">
-        <h2 class="text-lg font-bold text-gray-700">图库管理</h2>
-        <el-radio-group v-model="filterType" size="small" @change="handleFilterChange">
-          <el-radio-button label="">全部</el-radio-button>
-          <el-radio-button label="img">图片</el-radio-button>
-          <el-radio-button label="video">视频</el-radio-button>
-          <el-radio-button label="audio">音频</el-radio-button>
-        </el-radio-group>
-        <el-input
-          v-model="keyword"
-          placeholder="搜索文件名或 key"
-          clearable
-          style="width: 220px"
-          @keyup.enter="handleSearch"
-          @clear="handleSearch"
-        />
-      </div>
-      
-      <div class="flex gap-2">
-        <el-button @click="handleSearch">
-          搜索
-        </el-button>
-        <el-button @click="handleSyncQiniu" :loading="syncing">
-          同步七牛
-        </el-button>
-        <el-button type="danger" plain :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-          批量删除({{ selectedIds.length }})
-        </el-button>
-        <el-button @click="store.fetchData()" :loading="store.loading" circle>
-          <el-icon><RefreshRight /></el-icon>
-        </el-button>
-        
-        <el-upload
-          action="#"
-          :auto-upload="false"
-          :show-file-list="false"
-          :on-change="handleUpload"
-          multiple
-        >
-          <el-button type="primary">
-            <el-icon class="mr-1"><Upload /></el-icon> 上传文件
+    <div class="mb-4 rounded-[28px] border border-slate-200/70 bg-white/90 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.06)]">
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div class="space-y-4">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-500">Resource Lab</div>
+            <h2 class="mt-2 text-2xl font-bold text-slate-800">图库管理</h2>
+            <p class="mt-2 max-w-2xl text-sm leading-7 text-slate-500">支持拖拽上传、粘贴截图、批量整理与全屏预览。现在可以直接把素材流转成文章内容或封面资源。</p>
+          </div>
+
+          <div
+            class="rounded-3xl border border-dashed px-4 py-4 transition-all duration-300"
+            :class="dragActive ? 'border-sky-400 bg-sky-50 shadow-[0_12px_30px_rgba(14,165,233,0.12)]' : 'border-slate-200 bg-slate-50/80'"
+            @dragenter.prevent="handleDragEnter"
+            @dragover.prevent="handleDragEnter"
+            @dragleave.prevent="handleDragLeave"
+            @drop.prevent="handleDrop"
+          >
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div class="text-sm font-semibold text-slate-700">拖拽文件到这里，或直接粘贴截图上传</div>
+                <div class="mt-1 text-xs leading-6 text-slate-500">当前页面已监听 Ctrl/Cmd + V。图片、视频、音频会自动识别并落到对应目录。</div>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <el-upload
+                  action="#"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="handleUpload"
+                  multiple
+                >
+                  <el-button type="primary" :loading="uploading">
+                    <el-icon class="mr-1"><Upload /></el-icon> 上传文件
+                  </el-button>
+                </el-upload>
+                <div class="rounded-full bg-slate-900/5 px-3 py-2 text-xs font-medium text-slate-600">
+                  {{ uploading ? '上传中...' : '拖拽 / 粘贴 / 点击上传' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <el-radio-group v-model="filterType" size="small" @change="handleFilterChange">
+              <el-radio-button label="">全部</el-radio-button>
+              <el-radio-button label="img">图片</el-radio-button>
+              <el-radio-button label="video">视频</el-radio-button>
+              <el-radio-button label="audio">音频</el-radio-button>
+            </el-radio-group>
+            <el-input
+              v-model="keyword"
+              placeholder="搜索文件名或 key"
+              clearable
+              style="width: 240px"
+              @keyup.enter="handleSearch"
+              @clear="handleSearch"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 xl:max-w-[20rem] xl:justify-end">
+          <el-button @click="handleSearch">
+            搜索
           </el-button>
-        </el-upload>
+          <el-button @click="handleSyncQiniu" :loading="syncing">
+            同步七牛
+          </el-button>
+          <el-button type="danger" plain :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+            批量删除({{ selectedIds.length }})
+          </el-button>
+          <el-button @click="store.fetchData()" :loading="store.loading" circle>
+            <el-icon><RefreshRight /></el-icon>
+          </el-button>
+        </div>
       </div>
     </div>
 
     <!-- 资源网格 -->
-    <div class="flex-1 overflow-y-auto bg-white rounded-lg shadow-sm" v-loading="store.loading">
+    <div class="flex-1 overflow-y-auto rounded-[24px] border border-slate-200/70 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.05)]" v-loading="store.loading">
       <ResourceGrid 
         :items="store.items" 
         :selected-ids="selectedIds"
@@ -61,7 +90,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="mt-4 flex justify-center bg-white p-3 rounded-lg shadow-sm">
+    <div class="mt-4 flex justify-center rounded-[22px] border border-slate-200/70 bg-white p-3 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
       <el-pagination 
         layout="prev, pager, next, sizes, total" 
         :total="store.total"
@@ -98,12 +127,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Upload, RefreshRight } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useResourceStore, type ResourceItem } from '../../stores/resource'
-import { uploadToQiniu } from '../../utils/upload'
+import { extractClipboardFiles, uploadBatchToQiniu } from '../../utils/upload'
 import ResourceGrid from '../../components/ResourceGrid.vue'
 
 const store = useResourceStore()
@@ -115,6 +144,9 @@ const currentPage = ref(1)
 const currentPageSize = ref(24)
 const keyword = ref('')
 const syncing = ref(false)
+const uploading = ref(false)
+const dragActive = ref(false)
+const dragDepth = ref(0)
 const refDrawerVisible = ref(false)
 const refLoading = ref(false)
 const refResourceName = ref('')
@@ -127,6 +159,11 @@ watch(() => store.pageSize, (val) => { currentPageSize.value = val })
 onMounted(() => {
   store.setPageSize(24)
   store.fetchData()
+  window.addEventListener('paste', handlePaste)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('paste', handlePaste)
 })
 
 const handleFilterChange = () => {
@@ -236,16 +273,61 @@ const goEditArticle = (id: number) => {
   router.push(`/admin/articles/${id}`)
 }
 
+const uploadFiles = async (files: File[] | FileList) => {
+  const normalizedFiles = Array.from(files || []).filter((file): file is File => Boolean(file))
+  if (normalizedFiles.length === 0) {
+    return
+  }
+
+  uploading.value = true
+  try {
+    await uploadBatchToQiniu(normalizedFiles)
+    ElMessage.success(`已上传 ${normalizedFiles.length} 个文件`)
+    await store.fetchData()
+  } catch {
+    ElMessage.error('上传失败')
+  } finally {
+    uploading.value = false
+  }
+}
+
 const handleUpload = async (file: any) => {
   const rawFile = file.raw
   if (!rawFile) return
-  
-  try {
-    await uploadToQiniu(rawFile)
-    ElMessage.success('上传成功')
-    store.fetchData()
-  } catch {
-    ElMessage.error('上传失败')
+
+  await uploadFiles([rawFile])
+}
+
+const handlePaste = async (event: ClipboardEvent) => {
+  const files = extractClipboardFiles(event)
+  if (files.length === 0) {
+    return
   }
+
+  event.preventDefault()
+  await uploadFiles(files)
+}
+
+const handleDragEnter = () => {
+  dragDepth.value += 1
+  dragActive.value = true
+}
+
+const handleDragLeave = () => {
+  dragDepth.value = Math.max(0, dragDepth.value - 1)
+  if (dragDepth.value === 0) {
+    dragActive.value = false
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  dragDepth.value = 0
+  dragActive.value = false
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) {
+    return
+  }
+
+  await uploadFiles(files)
 }
 </script>

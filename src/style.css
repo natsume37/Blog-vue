@@ -29,6 +29,10 @@
   --el-font-family: var(--font-sans) !important;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -36,6 +40,7 @@ body {
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   background-color: var(--color-miyazaki-white);
   color: #1e293b;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -239,6 +244,7 @@ body {
   margin: 2.5rem auto;
   display: block;
   max-width: 100%;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
 .prose figure {

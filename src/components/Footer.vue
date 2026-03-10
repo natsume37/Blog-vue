@@ -1,6 +1,6 @@
 <template>
   <footer class="relative mt-20 bg-white pt-20 pb-10 overflow-hidden border-t border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 relative z-10">
+    <div class="max-w-[90rem] mx-auto px-5 sm:px-6 lg:px-8 relative z-10">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
         <div class="text-center md:text-left">
           <h3 class="text-2xl font-bold text-gray-800 mb-4 font-serif">{{ siteStore.siteConfig.siteName }}</h3>
