@@ -140,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Management,
@@ -157,21 +157,24 @@ import {
   Odometer,
   Picture,
   Connection,
+  Grid,
   Menu,
   Fold,
   Expand
 } from '@element-plus/icons-vue'
 import { useUserStore } from '../../stores/user'
+import { usePluginStore } from '../../stores/plugins'
 import { ElMessage } from 'element-plus'
 import UserAvatar from '../../components/UserAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const pluginStore = usePluginStore()
 const isCollapsed = ref(false)
 const mobileDrawerVisible = ref(false)
 
-const menuItems = [
+const baseMenuItems = [
   { path: '/admin/dashboard', label: '仪表盘', icon: Odometer },
   { path: '/admin/articles', label: '文章管理', icon: Document },
   { path: '/admin/categories', label: '分类/标签', icon: Collection },
@@ -179,18 +182,29 @@ const menuItems = [
   { path: '/admin/friend-links', label: '友链管理', icon: Connection },
   { path: '/admin/users', label: '用户管理', icon: User },
   { path: '/admin/resources', label: '图库管理', icon: Picture },
+  { path: '/admin/plugins', label: '插件中心', icon: Grid },
   { path: '/admin/monitor', label: '服务器监控', icon: Monitor },
   { path: '/admin/visits', label: '访问记录', icon: DataLine },
   { path: '/admin/settings', label: '站点设置', icon: Setting },
   { path: '/admin/mail-settings', label: '邮件配置', icon: Setting },
-  { path: '/admin/ai-settings', label: 'AI 配置', icon: Setting },
   { path: '/admin/audit-logs', label: '操作日志', icon: DataLine },
   { path: '/admin/login-logs', label: '登录日志', icon: DataLine },
   { path: '/admin/changelogs', label: '建站日志', icon: Timer }
 ]
 
+const menuItems = computed(() => {
+  const merged: Array<{ path: string; label: string; icon: any }> = []
+  baseMenuItems.forEach((item) => {
+    merged.push(item)
+    if (item.path === '/admin/plugins') {
+      merged.push(...pluginStore.pluginMenuItems)
+    }
+  })
+  return merged
+})
+
 const isActive = (path: string) => route.path === path || route.path.startsWith(`${path}/`)
-const activeMenuLabel = computed(() => menuItems.find(item => isActive(item.path))?.label || '后台管理')
+const activeMenuLabel = computed(() => menuItems.value.find(item => isActive(item.path))?.label || '后台管理')
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
@@ -202,6 +216,12 @@ watch(
     mobileDrawerVisible.value = false
   }
 )
+
+onMounted(() => {
+  if (userStore.isAdmin) {
+    pluginStore.ensureCatalog().catch(() => {})
+  }
+})
 
 const handleLogout = () => {
   userStore.logout()

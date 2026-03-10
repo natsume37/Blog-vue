@@ -52,6 +52,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/admin',
+    name: 'AdminRoot',
     component: () => import('../views/admin/AdminLayout.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
@@ -111,8 +112,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'ai-settings',
-        name: 'AdminAISettings',
-        component: () => import('../views/admin/AISettings.vue')
+        redirect: '/admin/plugins/ai-assistant/settings'
       },
       {
         path: 'changelogs',
@@ -138,6 +138,16 @@ const routes: Array<RouteRecordRaw> = [
         path: 'login-logs',
         name: 'AdminLoginLogs',
         component: () => import('../views/admin/LoginLogManage.vue')
+      },
+      {
+        path: 'plugins',
+        name: 'AdminPlugins',
+        component: () => import('../views/admin/plugins/PluginCenter.vue')
+      },
+      {
+        path: 'plugins/:pluginKey/:pageKey?',
+        name: 'AdminPluginPage',
+        component: () => import('../views/admin/plugins/PluginPageHost.vue')
       }
     ]
   },

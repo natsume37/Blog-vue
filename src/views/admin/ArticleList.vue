@@ -189,9 +189,13 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="180" align="right" fixed="right">
+          <el-table-column label="操作" width="260" align="right" fixed="right">
             <template #default="{ row }">
               <div class="flex justify-end gap-1">
+                <el-button v-if="wechatPluginInstalled" text type="success" @click="openWeChatPublisher(row.id)">
+                  <el-icon class="mr-1"><Promotion /></el-icon>
+                  发公众号
+                </el-button>
                 <el-button text type="primary" @click="$router.push(`/admin/articles/${row.id}`)">
                   <el-icon class="mr-1"><Edit /></el-icon>
                   编辑
@@ -240,10 +244,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Plus, View, ChatDotSquare, Star, Edit, Delete, CopyDocument, Document, Select } from '@element-plus/icons-vue'
+import { Plus, View, ChatDotSquare, Star, Edit, Delete, CopyDocument, Document, Select, Promotion } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import * as api from '../../api'
+import { usePluginStore } from '../../stores/plugins'
 
+const router = useRouter()
+const pluginStore = usePluginStore()
 const articles = ref<any[]>([])
 const loading = ref(false)
 const total = ref(0)
@@ -251,6 +259,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const statusFilter = ref<'all' | 'draft' | 'recycle'>('all')
 const selectedIds = ref<number[]>([])
+const wechatPluginInstalled = computed(() => pluginStore.isPluginInstalled('wechat-official-account'))
 
 const filterOptions = [
   { value: 'all' as const, label: '全部文章', description: '查看当前站点中的全部内容。' },
@@ -397,6 +406,13 @@ const handleDuplicate = async (row: any) => {
   }
 }
 
+const openWeChatPublisher = (articleId: number) => {
+  router.push({
+    path: '/admin/plugins/wechat-official-account/publisher',
+    query: { articleId: String(articleId) }
+  })
+}
+
 const handleBatch = (action: 'publish' | 'unpublish' | 'recycle' | 'restore' | 'delete') => {
   const actionLabelMap: Record<string, string> = {
     publish: '批量发布',
@@ -431,6 +447,7 @@ const handleBatch = (action: 'publish' | 'unpublish' | 'recycle' | 'restore' | '
 }
 
 onMounted(() => {
+  pluginStore.ensureCatalog().catch(() => {})
   fetchArticles()
 })
 </script>

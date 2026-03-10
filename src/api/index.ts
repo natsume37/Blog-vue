@@ -3,6 +3,7 @@ export { generateArticleDraft } from './ai'
 export { generateArticleSummary } from './ai'
 export { getAIConfig, updateAIConfig } from './ai'
 export { testAIConfig } from './ai'
+export { listMcpTools, callMcpTool } from './ai'
 
 // Auth
 export const login = (data: any) => request.post('/auth/login', data)
@@ -103,6 +104,16 @@ export const getMailConfig = () => request.get('/site/mail-config')
 export const updateMailConfig = (data: any) => request.put('/site/mail-config', data)
 export const testMailConfig = (config: any, emailTo: string) =>
   request.post('/site/mail-config/test', { ...config, emailTo })
+
+// Plugins (Admin)
+export const getAdminPluginCatalog = () => request.get('/plugins')
+export const installAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/install`)
+export const enableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/enable`)
+export const disableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/disable`)
+export const getAdminPluginConfig = (pluginId: string) => request.get(`/plugins/${pluginId}/settings`)
+export const updateAdminPluginConfig = (pluginId: string, data: any) => request.put(`/plugins/${pluginId}/settings`, { values: data })
+export const callAdminPluginAction = (pluginId: string, action: string, data: any) =>
+  request.post(`/plugins/${pluginId}/actions/${action}`, { payload: data })
 
 // Upload
 export const getUploadToken = () => request.get('/upload/token')

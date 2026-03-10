@@ -19,9 +19,21 @@
             <el-button class="!rounded-full !border-slate-200 !px-5 !py-2.5 !text-slate-600 hover:!border-slate-300 hover:!bg-slate-50" @click="router.push('/admin/articles')">
               返回列表
             </el-button>
-            <el-button class="!rounded-full !border-sky-200 !bg-sky-50 !px-5 !py-2.5 !text-sky-700 hover:!border-sky-300 hover:!bg-sky-100" @click="showAIDrawer = true">
+            <el-button
+              v-if="aiPluginEnabled"
+              class="!rounded-full !border-sky-200 !bg-sky-50 !px-5 !py-2.5 !text-sky-700 hover:!border-sky-300 hover:!bg-sky-100"
+              @click="showAIDrawer = true"
+            >
               <el-icon class="mr-2"><MagicStick /></el-icon>
               AI 草稿
+            </el-button>
+            <el-button
+              v-if="isEdit && wechatPluginInstalled"
+              class="!rounded-full !border-emerald-200 !bg-emerald-50 !px-5 !py-2.5 !text-emerald-700 hover:!border-emerald-300 hover:!bg-emerald-100"
+              @click="openWeChatPublisher"
+            >
+              <el-icon class="mr-2"><Link /></el-icon>
+              发公众号
             </el-button>
             <el-button
               v-if="isEdit"
@@ -221,7 +233,7 @@
             <el-form-item label="文章摘要">
               <el-input v-model="form.summary" type="textarea" :rows="3" placeholder="请输入文章摘要（可选）" />
               <div class="mt-2">
-                <el-button size="small" :loading="aiSummaryLoading" @click="handleGenerateSummary">
+                <el-button v-if="aiPluginEnabled" size="small" :loading="aiSummaryLoading" @click="handleGenerateSummary">
                   AI 一键摘要
                 </el-button>
               </div>
@@ -344,7 +356,7 @@
       </div>
     </el-drawer>
 
-    <el-drawer v-model="showAIDrawer" title="AI 草稿生成" size="460px" class="editor-drawer">
+    <el-drawer v-if="aiPluginEnabled" v-model="showAIDrawer" title="AI 草稿生成" size="460px" class="editor-drawer">
       <div class="drawer-stack">
         <section class="drawer-section">
           <div class="drawer-section__head">
@@ -484,6 +496,7 @@ import { marked } from 'marked'
 // @ts-ignore
 import { VueCropper } from 'vue-cropper'
 import * as api from '../../api'
+import { usePluginStore } from '../../stores/plugins'
 
 // 配置 marked 允许 HTML 标签（video, audio 等）
 marked.setOptions({
@@ -493,6 +506,7 @@ marked.setOptions({
 
 const route = useRoute()
 const router = useRouter()
+const pluginStore = usePluginStore()
 const isEdit = computed(() => route.params.id !== 'new')
 const submitting = ref(false)
 const showSettings = ref(false)
@@ -577,6 +591,8 @@ const visibilityStateLabel = computed(() => {
   if (form.value.visibility === 'private') return '仅管理员可见'
   return '公开访问'
 })
+const aiPluginEnabled = computed(() => pluginStore.isPluginEnabled('ai-assistant'))
+const wechatPluginInstalled = computed(() => pluginStore.isPluginInstalled('wechat-official-account'))
 const submitButtonLabel = computed(() => {
   if (form.value.is_published) {
     return isEdit.value ? '更新并发布' : '发布文章'
@@ -780,6 +796,14 @@ const handleSubmit = async () => {
   }
 }
 
+const openWeChatPublisher = () => {
+  if (!isEdit.value) return
+  router.push({
+    path: '/admin/plugins/wechat-official-account/publisher',
+    query: { articleId: String(route.params.id) }
+  })
+}
+
 const normalizeListInput = (value: string) =>
   value
     .split(/[\n,，]/g)
@@ -803,6 +827,10 @@ const applySuggestedTags = (tagNames: string[]) => {
 }
 
 const handleGenerateDraft = async () => {
+  if (!aiPluginEnabled.value) {
+    ElMessage.warning('AI 插件未启用')
+    return
+  }
   if (!aiForm.value.topic.trim()) {
     ElMessage.warning('请先输入主题')
     return
@@ -835,6 +863,10 @@ const handleGenerateDraft = async () => {
 }
 
 const handleGenerateSummary = async () => {
+  if (!aiPluginEnabled.value) {
+    ElMessage.warning('AI 插件未启用')
+    return
+  }
   const content = (form.value.content || '').trim()
   if (!content) {
     ElMessage.warning('请先填写正文内容')
@@ -930,6 +962,7 @@ const handleRestoreVersion = async (versionId: number) => {
 // Initialization
 onMounted(async () => {
   try {
+    await pluginStore.ensureCatalog()
     const [catsRes, tgsRes]: any = await Promise.all([api.getCategories(), api.getTags()])
     if (catsRes.code === 200) categories.value = catsRes.data || []
     if (tgsRes.code === 200) tags.value = tgsRes.data || []
