@@ -4,7 +4,7 @@
       v-if="!plugin?.installed || !plugin?.enabled"
       class="rounded-[24px] border border-amber-200 bg-amber-50/90 px-6 py-5 text-sm text-amber-800"
     >
-      当前插件尚未安装或启用。请先回到插件中心启用它，再使用生图和入库能力。
+      AI 助手当前尚未安装或启用。请先回到插件中心启用主插件，再使用文本和图片生成能力。
       <div class="mt-4">
         <el-button class="!rounded-full !border-amber-300 !bg-white" @click="router.push('/admin/plugins')">
           返回插件中心
@@ -15,10 +15,10 @@
     <section class="rounded-[28px] border border-slate-200/80 bg-white/94 p-6 shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
       <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <div class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">AI Image Studio</div>
-          <h3 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">AI 生图工作室</h3>
+          <div class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">AI Assistant Images</div>
+          <h3 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">AI 图片工作台</h3>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
-            用 OpenAI 兼容接口在后台生成图片，控制尺寸、质量和格式，并按需把结果直接写入图库。
+            在主 AI 插件内统一管理图片生成能力，控制尺寸、质量和格式，并按需把结果直接写入图库。
           </p>
         </div>
 
@@ -58,34 +58,34 @@
 
         <el-form label-position="top" class="space-y-2">
           <el-form-item label="提供方">
-            <el-input v-model="form.provider" placeholder="例如 openai-compatible" />
+            <el-input v-model="form.ai_provider" placeholder="例如 openai-compatible" />
           </el-form-item>
           <el-form-item label="Base URL">
-            <el-input v-model="form.base_url" placeholder="例如 https://api.openai.com/v1" />
+            <el-input v-model="form.ai_base_url" placeholder="例如 https://api.openai.com/v1" />
           </el-form-item>
           <el-form-item label="API Key">
             <el-input
-              v-model="form.api_key"
+              v-model="form.ai_api_key"
               type="password"
               show-password
-              placeholder="输入图片模型 API Key"
+              placeholder="输入与文本生成共用的 AI API Key"
               autocomplete="new-password"
             />
           </el-form-item>
           <el-form-item label="图片模型">
-            <el-input v-model="form.image_model" placeholder="例如 gpt-image-1" />
+            <el-input v-model="form.ai_image_model" placeholder="例如 gpt-image-1" />
           </el-form-item>
 
           <div class="grid gap-4 md:grid-cols-2">
             <el-form-item label="默认尺寸">
-              <el-select v-model="form.default_size" class="w-full">
+              <el-select v-model="form.ai_image_default_size" class="w-full">
                 <el-option label="方图 1024x1024" value="1024x1024" />
                 <el-option label="横图 1536x1024" value="1536x1024" />
                 <el-option label="竖图 1024x1536" value="1024x1536" />
               </el-select>
             </el-form-item>
             <el-form-item label="默认质量">
-              <el-select v-model="form.default_quality" class="w-full">
+              <el-select v-model="form.ai_image_default_quality" class="w-full">
                 <el-option label="自动" value="auto" />
                 <el-option label="低" value="low" />
                 <el-option label="中" value="medium" />
@@ -93,14 +93,14 @@
               </el-select>
             </el-form-item>
             <el-form-item label="默认格式">
-              <el-select v-model="form.default_output_format" class="w-full">
+              <el-select v-model="form.ai_image_default_output_format" class="w-full">
                 <el-option label="PNG" value="png" />
                 <el-option label="JPEG" value="jpeg" />
                 <el-option label="WEBP" value="webp" />
               </el-select>
             </el-form-item>
             <el-form-item label="默认背景">
-              <el-select v-model="form.default_background" class="w-full">
+              <el-select v-model="form.ai_image_default_background" class="w-full">
                 <el-option label="自动" value="auto" />
                 <el-option label="纯色背景" value="opaque" />
                 <el-option label="透明背景" value="transparent" />
@@ -110,12 +110,12 @@
 
           <div class="grid gap-4 md:grid-cols-2">
             <el-form-item label="超时（秒）">
-              <el-input-number v-model="form.timeout_seconds" :min="10" :max="180" class="w-full" />
+              <el-input-number v-model="form.ai_image_timeout_seconds" :min="10" :max="180" class="w-full" />
             </el-form-item>
             <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
               <div class="text-sm font-medium text-slate-800">默认入库图库</div>
               <div class="mt-1 text-xs leading-6 text-slate-500">开启后，点击生成会优先把图片写入图库并返回资源地址。</div>
-              <el-switch v-model="form.save_to_library_default" class="mt-3" />
+              <el-switch v-model="form.ai_image_save_to_library_default" class="mt-3" />
             </div>
           </div>
         </el-form>
@@ -290,16 +290,16 @@ import { ElMessage } from 'element-plus'
 import { usePluginStore } from '../../../stores/plugins'
 
 type AIImagePluginConfig = {
-  provider: string
-  base_url: string
-  api_key: string
-  image_model: string
-  default_size: '1024x1024' | '1536x1024' | '1024x1536'
-  default_quality: 'auto' | 'low' | 'medium' | 'high'
-  default_output_format: 'png' | 'jpeg' | 'webp'
-  default_background: 'auto' | 'opaque' | 'transparent'
-  timeout_seconds: number
-  save_to_library_default: boolean
+  ai_provider: string
+  ai_base_url: string
+  ai_api_key: string
+  ai_image_model: string
+  ai_image_default_size: '1024x1024' | '1536x1024' | '1024x1536'
+  ai_image_default_quality: 'auto' | 'low' | 'medium' | 'high'
+  ai_image_default_output_format: 'png' | 'jpeg' | 'webp'
+  ai_image_default_background: 'auto' | 'opaque' | 'transparent'
+  ai_image_timeout_seconds: number
+  ai_image_save_to_library_default: boolean
 }
 
 type AIImageGenerateForm = {
@@ -345,7 +345,7 @@ type AIImageResult = {
 
 const router = useRouter()
 const pluginStore = usePluginStore()
-const pluginId = 'ai-image-studio'
+const pluginId = 'ai-assistant'
 
 const plugin = computed(() => pluginStore.getPlugin(pluginId))
 const saving = ref(false)
@@ -355,16 +355,16 @@ const lastSavedSnapshot = ref('')
 const lastResult = ref<AIImageResult | null>(null)
 
 const form = ref<AIImagePluginConfig>({
-  provider: 'openai-compatible',
-  base_url: '',
-  api_key: '',
-  image_model: 'gpt-image-1',
-  default_size: '1024x1024',
-  default_quality: 'high',
-  default_output_format: 'png',
-  default_background: 'auto',
-  timeout_seconds: 90,
-  save_to_library_default: true,
+  ai_provider: 'openai-compatible',
+  ai_base_url: '',
+  ai_api_key: '',
+  ai_image_model: 'gpt-image-1',
+  ai_image_default_size: '1024x1024',
+  ai_image_default_quality: 'high',
+  ai_image_default_output_format: 'png',
+  ai_image_default_background: 'auto',
+  ai_image_timeout_seconds: 90,
+  ai_image_save_to_library_default: true,
 })
 
 const generateForm = ref<AIImageGenerateForm>({
@@ -379,40 +379,41 @@ const generateForm = ref<AIImageGenerateForm>({
 })
 
 const buildConfigPayload = (): AIImagePluginConfig => ({
-  provider: form.value.provider.trim() || 'openai-compatible',
-  base_url: form.value.base_url.trim(),
-  api_key: form.value.api_key.trim(),
-  image_model: form.value.image_model.trim() || 'gpt-image-1',
-  default_size: form.value.default_size,
-  default_quality: form.value.default_quality,
-  default_output_format: form.value.default_output_format,
-  default_background: form.value.default_background,
-  timeout_seconds: Math.max(10, Number(form.value.timeout_seconds || 90)),
-  save_to_library_default: !!form.value.save_to_library_default,
+  ai_provider: form.value.ai_provider.trim() || 'openai-compatible',
+  ai_base_url: form.value.ai_base_url.trim(),
+  ai_api_key: form.value.ai_api_key.trim(),
+  ai_image_model: form.value.ai_image_model.trim() || 'gpt-image-1',
+  ai_image_default_size: form.value.ai_image_default_size,
+  ai_image_default_quality: form.value.ai_image_default_quality,
+  ai_image_default_output_format: form.value.ai_image_default_output_format,
+  ai_image_default_background: form.value.ai_image_default_background,
+  ai_image_timeout_seconds: Math.max(10, Number(form.value.ai_image_timeout_seconds || 90)),
+  ai_image_save_to_library_default: !!form.value.ai_image_save_to_library_default,
 })
 
 const snapshotConfig = () => JSON.stringify(buildConfigPayload())
 
 const applyConfig = (payload: any) => {
   form.value = {
-    provider: payload?.provider || 'openai-compatible',
-    base_url: payload?.base_url || '',
-    api_key: payload?.api_key || '',
-    image_model: payload?.image_model || 'gpt-image-1',
-    default_size: payload?.default_size || '1024x1024',
-    default_quality: payload?.default_quality || 'high',
-    default_output_format: payload?.default_output_format || 'png',
-    default_background: payload?.default_background || 'auto',
-    timeout_seconds: Number(payload?.timeout_seconds || 90),
-    save_to_library_default: payload?.save_to_library_default !== false,
+    ai_provider: payload?.ai_provider || payload?.provider || 'openai-compatible',
+    ai_base_url: payload?.ai_base_url || payload?.base_url || '',
+    ai_api_key: payload?.ai_api_key || payload?.api_key || '',
+    ai_image_model: payload?.ai_image_model || payload?.image_model || 'gpt-image-1',
+    ai_image_default_size: payload?.ai_image_default_size || payload?.default_size || '1024x1024',
+    ai_image_default_quality: payload?.ai_image_default_quality || payload?.default_quality || 'high',
+    ai_image_default_output_format: payload?.ai_image_default_output_format || payload?.default_output_format || 'png',
+    ai_image_default_background: payload?.ai_image_default_background || payload?.default_background || 'auto',
+    ai_image_timeout_seconds: Number(payload?.ai_image_timeout_seconds || payload?.timeout_seconds || 90),
+    ai_image_save_to_library_default:
+      payload?.ai_image_save_to_library_default ?? payload?.save_to_library_default ?? true,
   }
   generateForm.value = {
     ...generateForm.value,
-    size: form.value.default_size,
-    quality: form.value.default_quality,
-    output_format: form.value.default_output_format,
-    background: form.value.default_background,
-    save_to_library: form.value.save_to_library_default,
+    size: form.value.ai_image_default_size,
+    quality: form.value.ai_image_default_quality,
+    output_format: form.value.ai_image_default_output_format,
+    background: form.value.ai_image_default_background,
+    save_to_library: form.value.ai_image_save_to_library_default,
   }
   lastSavedSnapshot.value = snapshotConfig()
 }
@@ -457,7 +458,7 @@ const testConnection = async () => {
   testing.value = true
   try {
     await persistConfig(true)
-    const res: any = await pluginStore.callPluginAction(pluginId, 'test_connection', {})
+    const res: any = await pluginStore.callPluginAction(pluginId, 'test_image_connection', {})
     if (res.code === 200 && res.data?.result?.ok) {
       const result = res.data.result
       ElMessage.success(`${result.provider}/${result.model} 连通成功，耗时 ${result.latency_ms}ms`)
@@ -480,7 +481,7 @@ const generateImages = async () => {
   generating.value = true
   try {
     await persistConfig(true)
-    const res: any = await pluginStore.callPluginAction(pluginId, 'generate', {
+    const res: any = await pluginStore.callPluginAction(pluginId, 'generate_image', {
       prompt: generateForm.value.prompt.trim(),
       negative_prompt: generateForm.value.negative_prompt.trim(),
       size: generateForm.value.size,

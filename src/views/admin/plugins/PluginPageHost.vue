@@ -150,6 +150,15 @@ const layoutLabel = computed(() => {
   return 'Panel'
 })
 
+watch(
+  pluginId,
+  (nextPluginId) => {
+    if (nextPluginId !== 'ai-image-studio') return
+    router.replace('/admin/plugins/ai-assistant/images')
+  },
+  { immediate: true },
+)
+
 const openExternalEntry = () => {
   if (!externalEntryUrl.value) return
   window.open(externalEntryUrl.value, '_blank', 'noopener,noreferrer')
