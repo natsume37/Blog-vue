@@ -38,3 +38,10 @@ export const testAIConfig = (data: {
   ai_model: string
   ai_timeout_seconds: number
 }) => request.post('/ai/test', data, { timeout: 120000 })
+
+export const listMcpTools = () => request.get('/ai/mcp/tools')
+
+export const callMcpTool = (data: {
+  name: string
+  arguments?: Record<string, any>
+}) => request.post('/ai/mcp/call', data, { timeout: 120000 })
