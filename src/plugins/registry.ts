@@ -55,7 +55,7 @@ export const builtinPluginCatalog: PluginManifest[] = [
   {
     id: 'wechat-official-account',
     name: '微信公众号发布',
-    version: '0.1.0',
+    version: '1.0.0',
     builtin: true,
     installed: false,
     enabled: false,

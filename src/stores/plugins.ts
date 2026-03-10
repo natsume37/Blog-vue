@@ -80,7 +80,7 @@ const mergeCatalog = (remotePlugins: Partial<PluginManifest>[]) => {
   })
 
   remotePlugins.forEach((plugin) => {
-    const id = String(plugin.id || '').trim()
+    const id = String(plugin.id || plugin.plugin_id || '').trim()
     if (!id) return
     merged.set(id, normalizePlugin(plugin, merged.get(id)))
   })

@@ -12,6 +12,7 @@
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <el-tag v-if="plugin?.version" effect="plain">{{ plugin.version }}</el-tag>
           <el-tag v-if="plugin?.builtin" effect="plain">内建</el-tag>
           <el-tag v-if="plugin?.installed" type="success" effect="plain">已安装</el-tag>
           <el-tag v-if="plugin?.enabled" type="warning" effect="plain">已启用</el-tag>
