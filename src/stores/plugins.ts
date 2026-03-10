@@ -80,6 +80,8 @@ const normalizePages = (
       default: page.default ?? index === 0,
       render_mode: page.render_mode || 'local',
       entry_url: page.entry_url || '',
+      script_url: page.script_url || '',
+      layout: page.layout || 'panel',
       path: path || `/admin/plugins/${pluginId}/${key}`,
     }
   })
@@ -289,7 +291,10 @@ export const usePluginStore = defineStore('plugins', () => {
       .filter((plugin) => plugin.enabled)
       .flatMap((plugin) =>
         (plugin.adminPages || [])
-          .filter((page) => page.menu !== false && (page.render_mode || 'local') === 'local')
+          .filter((page) => {
+            const mode = page.render_mode || 'local'
+            return page.menu !== false && (mode === 'local' || mode === 'script')
+          })
           .map((page) => ({
             path: page.path || buildPluginPath(plugin.id, page.key),
             label: page.label,

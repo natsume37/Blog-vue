@@ -14,6 +14,8 @@ export interface PluginAdminPage {
   component_key?: string
   render_mode?: string
   entry_url?: string
+  script_url?: string
+  layout?: string
 }
 
 export interface PluginPublisher {

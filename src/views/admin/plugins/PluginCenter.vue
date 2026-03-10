@@ -305,6 +305,7 @@ const statusLabel = (status?: string) => {
 
 const deliveryLabel = (plugin: PluginManifest) => {
   const mode = plugin.delivery?.entry_mode || 'local'
+  if (mode === 'script') return 'JS 脚本'
   if (mode === 'iframe') return 'Iframe 嵌入'
   if (mode === 'external') return '外部页面'
   return plugin.builtin ? '本地页面' : '市场清单'
