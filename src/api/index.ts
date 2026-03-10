@@ -107,6 +107,7 @@ export const testMailConfig = (config: any, emailTo: string) =>
 
 // Plugins (Admin)
 export const getAdminPluginCatalog = () => request.get('/plugins')
+export const getAdminPluginMarket = () => request.get('/plugins/market')
 export const installAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/install`)
 export const enableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/enable`)
 export const disableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/disable`)

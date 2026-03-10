@@ -1,8 +1,15 @@
-import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
 import * as api from '../api'
 import { builtinPluginCatalog, resolvePluginIcon } from '../plugins/registry'
-import type { PluginAdminPage, PluginManifest } from '../types/plugins'
+import type {
+  PluginAdminPage,
+  PluginCompatibility,
+  PluginDelivery,
+  PluginManifest,
+  PluginPublisher,
+  PluginScreenshot,
+} from '../types/plugins'
 
 type PluginMenuItem = {
   path: string
@@ -12,11 +19,46 @@ type PluginMenuItem = {
   pluginId: string
 }
 
+const buildPluginPath = (pluginId: string, pageKey?: string) => {
+  const suffix = pageKey ? `/${pageKey}` : ''
+  return `/admin/plugins/${pluginId}${suffix}`
+}
+
+const normalizePublisher = (
+  source: PluginManifest,
+  fallback?: PluginManifest,
+): PluginPublisher => ({
+  name: source.publisher?.name || fallback?.publisher?.name || source.author || fallback?.author || '',
+  url: source.publisher?.url || fallback?.publisher?.url || source.homepage || fallback?.homepage || '',
+  verified: Boolean(source.publisher?.verified ?? fallback?.publisher?.verified ?? source.verified ?? fallback?.verified),
+})
+
+const normalizeCompatibility = (
+  source: PluginManifest,
+  fallback?: PluginManifest,
+): PluginCompatibility => ({
+  backend: source.compatibility?.backend || fallback?.compatibility?.backend || 'fastapi',
+  frontend: source.compatibility?.frontend || fallback?.compatibility?.frontend || 'vue',
+  min_app_version: source.compatibility?.min_app_version || fallback?.compatibility?.min_app_version || '1.0.0',
+  max_app_version: source.compatibility?.max_app_version || fallback?.compatibility?.max_app_version || '',
+})
+
+const normalizeDelivery = (
+  source: PluginManifest,
+  fallback?: PluginManifest,
+): PluginDelivery => ({
+  type: source.delivery?.type || fallback?.delivery?.type || 'builtin',
+  entry_mode: source.delivery?.entry_mode || fallback?.delivery?.entry_mode || 'local',
+  install_strategy: source.delivery?.install_strategy || fallback?.delivery?.install_strategy || 'builtin-toggle',
+  runtime_type: source.delivery?.runtime_type || fallback?.delivery?.runtime_type || 'builtin',
+  entry_url: source.delivery?.entry_url || fallback?.delivery?.entry_url || '',
+})
+
 const normalizePages = (
   pages: PluginAdminPage[] | undefined,
   fallback: PluginAdminPage[] | undefined,
   pluginId: string,
-) => {
+): PluginAdminPage[] => {
   const target = Array.isArray(pages) && pages.length ? pages : (fallback || [])
   return target.map((page, index) => {
     const path = String(page.path || '').trim()
@@ -27,6 +69,7 @@ const normalizePages = (
     ).trim()
 
     return {
+      ...page,
       key,
       label: String(page.label || page.menu_label || page.title || key),
       description: page.description || page.title || '',
@@ -35,39 +78,101 @@ const normalizePages = (
       menu: page.menu ?? true,
       order: page.order ?? (index + 1) * 10,
       default: page.default ?? index === 0,
+      render_mode: page.render_mode || 'local',
+      entry_url: page.entry_url || '',
       path: path || `/admin/plugins/${pluginId}/${key}`,
     }
   })
+}
+
+const normalizeScreenshots = (
+  screenshots: PluginScreenshot[] | undefined,
+  fallback: PluginScreenshot[] | undefined,
+): PluginScreenshot[] => {
+  const target = Array.isArray(screenshots) && screenshots.length ? screenshots : (fallback || [])
+  return target
+    .map((item) => ({
+      label: String(item.label || '').trim(),
+      url: String(item.url || '').trim(),
+    }))
+    .filter((item) => item.url)
 }
 
 const normalizePlugin = (
   source: Partial<PluginManifest>,
   fallback?: PluginManifest,
 ): PluginManifest => {
-  const id = String(source.id || source.plugin_id || fallback?.id || '').trim()
+  const raw = source as PluginManifest
+  const id = String(raw.id || raw.plugin_id || fallback?.id || '').trim()
+  const docsUrl = raw.docsUrl || raw.docs_url || fallback?.docsUrl || fallback?.docs_url || ''
+  const repoUrl = raw.repoUrl || raw.repo_url || fallback?.repoUrl || fallback?.repo_url || ''
+  const supportUrl = raw.supportUrl || raw.support_url || fallback?.supportUrl || fallback?.support_url || ''
+  const issuesUrl = raw.issuesUrl || raw.issues_url || fallback?.issuesUrl || fallback?.issues_url || ''
+  const changelogUrl = raw.changelogUrl || raw.changelog_url || fallback?.changelogUrl || fallback?.changelog_url || ''
+  const manifestUrl = raw.manifestUrl || raw.manifest_url || fallback?.manifestUrl || fallback?.manifest_url || ''
+  const sourceRepo = raw.sourceRepo || raw.source_repo || fallback?.sourceRepo || fallback?.source_repo || ''
+  const publishedAt = raw.publishedAt || raw.published_at || fallback?.publishedAt || fallback?.published_at || ''
 
   return {
     id,
-    name: String(source.name || fallback?.name || id),
-    version: String(source.version || fallback?.version || '0.0.0'),
-    description: source.description ?? fallback?.description ?? '',
-    author: source.author ?? fallback?.author ?? '',
-    icon: source.icon || fallback?.icon || 'Grid',
-    builtin: Boolean(source.builtin ?? fallback?.builtin),
-    installed: Boolean(source.installed ?? fallback?.installed),
-    enabled: Boolean(source.enabled ?? fallback?.enabled),
-    status: String(source.status || fallback?.status || ''),
-    category: String(source.category || fallback?.category || ''),
-    homepage: source.homepage ?? fallback?.homepage ?? '',
-    docsUrl: source.docsUrl ?? fallback?.docsUrl ?? '',
-    features: Array.isArray(source.features) ? source.features : (fallback?.features || []),
-    source: source.source ?? fallback?.source ?? '',
-    auto_install: source.auto_install ?? fallback?.auto_install ?? false,
-    adminPages: normalizePages(source.adminPages || source.admin_pages, fallback?.adminPages, id),
-    config: source.config ?? fallback?.config ?? {},
+    plugin_id: raw.plugin_id || fallback?.plugin_id,
+    name: String(raw.name || fallback?.name || id),
+    version: String(raw.version || fallback?.version || '0.0.0'),
+    latest_version: String(raw.latest_version || raw.version || fallback?.latest_version || fallback?.version || '0.0.0'),
+    installed_version: String(raw.installed_version || fallback?.installed_version || ''),
+    description: raw.description ?? fallback?.description ?? '',
+    summary: raw.summary ?? fallback?.summary ?? raw.description ?? fallback?.description ?? '',
+    author: raw.author ?? fallback?.author ?? '',
+    publisher: normalizePublisher(raw, fallback),
+    icon: raw.icon || fallback?.icon || 'Grid',
+    builtin: Boolean(raw.builtin ?? fallback?.builtin),
+    marketplace: Boolean(raw.marketplace ?? fallback?.marketplace),
+    official: Boolean(raw.official ?? fallback?.official),
+    verified: Boolean(raw.verified ?? fallback?.verified),
+    featured: Boolean(raw.featured ?? fallback?.featured),
+    installed: Boolean(raw.installed ?? fallback?.installed),
+    enabled: Boolean(raw.enabled ?? fallback?.enabled),
+    installable: Boolean(raw.installable ?? fallback?.installable ?? true),
+    activatable: Boolean(raw.activatable ?? fallback?.activatable ?? true),
+    upgrade_available: Boolean(raw.upgrade_available ?? fallback?.upgrade_available),
+    status: String(raw.status || fallback?.status || ''),
+    category: String(raw.category || fallback?.category || ''),
+    source: String(raw.source || fallback?.source || ''),
+    homepage: raw.homepage ?? fallback?.homepage ?? '',
+    docsUrl,
+    docs_url: docsUrl,
+    repoUrl,
+    repo_url: repoUrl,
+    supportUrl,
+    support_url: supportUrl,
+    issuesUrl,
+    issues_url: issuesUrl,
+    changelogUrl,
+    changelog_url: changelogUrl,
+    manifestUrl,
+    manifest_url: manifestUrl,
+    sourceRepo,
+    source_repo: sourceRepo,
+    license: raw.license ?? fallback?.license ?? '',
+    pricing: raw.pricing ?? fallback?.pricing ?? 'free',
+    publishedAt,
+    published_at: publishedAt,
+    auto_install: raw.auto_install ?? fallback?.auto_install ?? false,
+    features: Array.isArray(raw.features) ? raw.features : (fallback?.features || []),
+    keywords: Array.isArray(raw.keywords) ? raw.keywords : (fallback?.keywords || []),
+    tags: Array.isArray(raw.tags) ? raw.tags : (fallback?.tags || []),
+    capabilities: Array.isArray(raw.capabilities) ? raw.capabilities : (fallback?.capabilities || []),
+    permissions: Array.isArray(raw.permissions) ? raw.permissions : (fallback?.permissions || []),
+    compatibility: normalizeCompatibility(raw, fallback),
+    delivery: normalizeDelivery(raw, fallback),
+    screenshots: normalizeScreenshots(raw.screenshots, fallback?.screenshots),
+    adminPages: normalizePages(raw.adminPages || raw.admin_pages, fallback?.adminPages, id),
+    admin_pages: normalizePages(raw.adminPages || raw.admin_pages, fallback?.adminPages, id),
+    actions: Array.isArray(raw.actions) ? raw.actions : (fallback?.actions || []),
+    config: raw.config ?? fallback?.config ?? {},
     metadata: {
       ...(fallback?.metadata || {}),
-      ...(source.metadata || {}),
+      ...(raw.metadata || {}),
     },
   }
 }
@@ -86,15 +191,10 @@ const mergeCatalog = (remotePlugins: Partial<PluginManifest>[]) => {
   })
 
   return Array.from(merged.values()).sort((a, b) => {
-    const left = a.name.toLowerCase()
-    const right = b.name.toLowerCase()
-    return left.localeCompare(right, 'zh-CN')
+    const featuredWeight = Number(Boolean(b.featured)) - Number(Boolean(a.featured))
+    if (featuredWeight !== 0) return featuredWeight
+    return a.name.localeCompare(b.name, 'zh-CN')
   })
-}
-
-const buildPluginPath = (pluginId: string, pageKey?: string) => {
-  const suffix = pageKey ? `/${pageKey}` : ''
-  return `/admin/plugins/${pluginId}${suffix}`
 }
 
 export const usePluginStore = defineStore('plugins', () => {
@@ -106,8 +206,16 @@ export const usePluginStore = defineStore('plugins', () => {
   const discoverPlugins = async () => {
     loading.value = true
     try {
-      const res: any = await api.getAdminPluginCatalog()
-      if (res.code === 200) {
+      const responses: any[] = []
+
+      try {
+        responses.push(await api.getAdminPluginMarket())
+      } catch (_marketError) {
+        responses.push(await api.getAdminPluginCatalog())
+      }
+
+      const res = responses[0]
+      if (res?.code === 200) {
         const list = Array.isArray(res.data) ? res.data : (res.data?.plugins || [])
         catalog.value = mergeCatalog(Array.isArray(list) ? list : [])
         initialized.value = true
@@ -133,9 +241,7 @@ export const usePluginStore = defineStore('plugins', () => {
     }
   }
 
-  const getPlugin = (pluginId: string) => {
-    return catalog.value.find((item) => item.id === pluginId)
-  }
+  const getPlugin = (pluginId: string) => catalog.value.find((item) => item.id === pluginId)
 
   const getPluginPage = (pluginId: string, pageKey?: string) => {
     const plugin = getPlugin(pluginId)
@@ -170,24 +276,20 @@ export const usePluginStore = defineStore('plugins', () => {
     return res
   }
 
-  const fetchPluginConfig = async (pluginId: string) => {
-    return api.getAdminPluginConfig(pluginId)
-  }
+  const fetchPluginConfig = async (pluginId: string) => api.getAdminPluginConfig(pluginId)
 
-  const updatePluginConfig = async (pluginId: string, payload: Record<string, any>) => {
-    return api.updateAdminPluginConfig(pluginId, payload)
-  }
+  const updatePluginConfig = async (pluginId: string, payload: Record<string, any>) =>
+    api.updateAdminPluginConfig(pluginId, payload)
 
-  const callPluginAction = async (pluginId: string, action: string, payload: Record<string, any>) => {
-    return api.callAdminPluginAction(pluginId, action, payload)
-  }
+  const callPluginAction = async (pluginId: string, action: string, payload: Record<string, any>) =>
+    api.callAdminPluginAction(pluginId, action, payload)
 
   const pluginMenuItems = computed<PluginMenuItem[]>(() => {
     return catalog.value
       .filter((plugin) => plugin.enabled)
       .flatMap((plugin) =>
         (plugin.adminPages || [])
-          .filter((page) => page.menu !== false)
+          .filter((page) => page.menu !== false && (page.render_mode || 'local') === 'local')
           .map((page) => ({
             path: page.path || buildPluginPath(plugin.id, page.key),
             label: page.label,
