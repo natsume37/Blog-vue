@@ -96,6 +96,34 @@
             />
           </el-form-item>
 
+          <div class="rounded-[22px] border border-sky-100 bg-sky-50/80 p-4 text-sm text-sky-900">
+            <div class="font-medium">开发者服务器</div>
+            <div class="mt-2 leading-7">
+              回调地址固定为 <code class="rounded bg-white px-2 py-1 text-xs">https://你的后端域名/wechat</code>。
+              当前版本先支持微信后台的<strong>明文模式</strong>。
+            </div>
+          </div>
+
+          <el-form-item label="回调 Token">
+            <el-input v-model="form.callback_token" placeholder="与微信后台开发者服务器里的 Token 保持一致" />
+          </el-form-item>
+          <el-form-item label="默认消息回复">
+            <el-input
+              v-model="form.callback_reply_text"
+              type="textarea"
+              :rows="2"
+              placeholder="收到普通文本消息时的自动回复"
+            />
+          </el-form-item>
+          <el-form-item label="关注欢迎语">
+            <el-input
+              v-model="form.callback_subscribe_reply"
+              type="textarea"
+              :rows="2"
+              placeholder="用户关注时的自动回复"
+            />
+          </el-form-item>
+
           <div class="grid gap-4 md:grid-cols-2">
             <el-form-item label="默认作者">
               <el-input v-model="form.author" placeholder="为空则读取文章作者" />
@@ -451,6 +479,9 @@ const saveConfig = async () => {
       ...form.value,
       app_id: form.value.app_id.trim(),
       app_secret: form.value.app_secret.trim(),
+      callback_token: form.value.callback_token.trim(),
+      callback_reply_text: form.value.callback_reply_text.trim(),
+      callback_subscribe_reply: form.value.callback_subscribe_reply.trim(),
       author: form.value.author.trim(),
       content_source_url_base: form.value.content_source_url_base.trim(),
       fallback_thumb_media_id: form.value.fallback_thumb_media_id.trim(),

@@ -3,6 +3,9 @@ export const WECHAT_PLUGIN_ID = 'wechat-official-account'
 export type WeChatPluginConfig = {
   app_id: string
   app_secret: string
+  callback_token: string
+  callback_reply_text: string
+  callback_subscribe_reply: string
   author: string
   publish_mode: 'draft' | 'publish'
   content_source_url_base: string
@@ -74,6 +77,9 @@ export type WeChatQrCodeItem = {
 export const createDefaultWeChatConfig = (): WeChatPluginConfig => ({
   app_id: '',
   app_secret: '',
+  callback_token: '',
+  callback_reply_text: '公众号服务已连接，当前请在后台完成发布操作。',
+  callback_subscribe_reply: '欢迎关注 Martin Blog。',
   author: '',
   publish_mode: 'draft',
   content_source_url_base: '',
@@ -89,6 +95,9 @@ export const createDefaultWeChatConfig = (): WeChatPluginConfig => ({
 export const normalizeWeChatConfig = (payload: any): WeChatPluginConfig => ({
   app_id: payload?.app_id || '',
   app_secret: payload?.app_secret || '',
+  callback_token: payload?.callback_token || '',
+  callback_reply_text: payload?.callback_reply_text || '公众号服务已连接，当前请在后台完成发布操作。',
+  callback_subscribe_reply: payload?.callback_subscribe_reply || '欢迎关注 Martin Blog。',
   author: payload?.author || '',
   publish_mode: payload?.publish_mode === 'publish' ? 'publish' : 'draft',
   content_source_url_base: payload?.content_source_url_base || '',
