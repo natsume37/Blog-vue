@@ -60,7 +60,10 @@ const normalizePages = (
   pluginId: string,
 ): PluginAdminPage[] => {
   const target = Array.isArray(pages) && pages.length ? pages : (fallback || [])
-  return target.map((page, index) => {
+  const fallbackPages = fallback || []
+  const fallbackMap = new Map<string, PluginAdminPage>()
+
+  fallbackPages.forEach((page, index) => {
     const path = String(page.path || '').trim()
     const key = String(
       page.key ||
@@ -68,21 +71,51 @@ const normalizePages = (
       (index === 0 ? 'settings' : `page-${index + 1}`)
     ).trim()
 
+    if (key) fallbackMap.set(`key:${key}`, page)
+    if (path) fallbackMap.set(`path:${path}`, page)
+  })
+
+  return target.map((page, index) => {
+    const path = String(page.path || '').trim()
+    const hintedKey = String(
+      page.key ||
+      (path ? path.split('/').filter(Boolean).pop() : '') ||
+      ''
+    ).trim()
+    const fallbackPage = fallbackMap.get(`key:${hintedKey}`) || fallbackMap.get(`path:${path}`) || fallbackPages[index]
+    const fallbackPath = String(fallbackPage?.path || '').trim()
+    const key = String(
+      hintedKey ||
+      fallbackPage?.key ||
+      (fallbackPath ? fallbackPath.split('/').filter(Boolean).pop() : '') ||
+      (index === 0 ? 'settings' : `page-${index + 1}`)
+    ).trim()
+    const resolvedPath = path || fallbackPath || `/admin/plugins/${pluginId}/${key}`
+
     return {
+      ...(fallbackPage || {}),
       ...page,
       key,
-      label: String(page.label || page.menu_label || page.title || key),
-      description: page.description || page.title || '',
-      component: String(page.component || page.component_key || ''),
-      icon: page.icon,
-      menu: page.menu ?? true,
-      order: page.order ?? (index + 1) * 10,
-      default: page.default ?? index === 0,
-      render_mode: page.render_mode || 'local',
-      entry_url: page.entry_url || '',
-      script_url: page.script_url || '',
-      layout: page.layout || 'panel',
-      path: path || `/admin/plugins/${pluginId}/${key}`,
+      label: String(
+        page.label ||
+        page.menu_label ||
+        page.title ||
+        fallbackPage?.label ||
+        fallbackPage?.menu_label ||
+        fallbackPage?.title ||
+        key
+      ).trim(),
+      description: String(page.description || page.title || fallbackPage?.description || fallbackPage?.title || '').trim(),
+      component: String(page.component || page.component_key || fallbackPage?.component || fallbackPage?.component_key || '').trim(),
+      icon: page.icon || fallbackPage?.icon,
+      menu: page.menu ?? fallbackPage?.menu ?? true,
+      order: page.order ?? fallbackPage?.order ?? (index + 1) * 10,
+      default: page.default ?? fallbackPage?.default ?? index === 0,
+      render_mode: String(page.render_mode || fallbackPage?.render_mode || 'local').trim() || 'local',
+      entry_url: String(page.entry_url || fallbackPage?.entry_url || '').trim(),
+      script_url: String(page.script_url || fallbackPage?.script_url || '').trim(),
+      layout: String(page.layout || fallbackPage?.layout || 'panel').trim() || 'panel',
+      path: resolvedPath,
     }
   })
 }

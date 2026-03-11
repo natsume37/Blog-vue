@@ -114,7 +114,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '../../../api/request'
 import { apiConfig } from '../../../config'
-import { resolvePluginPageLoader } from '../../../plugins/registry'
+import { resolveBuiltinPluginPageLoader, resolvePluginPageLoader } from '../../../plugins/registry'
 import { usePluginStore } from '../../../stores/plugins'
 
 const route = useRoute()
@@ -281,7 +281,9 @@ watch(
     if (mode !== 'local') {
       resolvedComponent.value = null
     } else {
-      const loader = resolvePluginPageLoader(nextPage?.component)
+      const loader =
+        resolvePluginPageLoader(nextPage?.component) ||
+        resolveBuiltinPluginPageLoader(pluginId.value, nextPage?.key, nextPage?.path)
       resolvedComponent.value = loader ? defineAsyncComponent(loader) : null
     }
     await mountScriptPage()

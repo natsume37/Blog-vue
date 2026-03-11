@@ -191,8 +191,28 @@ export const builtinPluginCatalog: PluginManifest[] = [
 ]
 
 export const resolvePluginPageLoader = (componentKey?: string) => {
-  if (!componentKey) return undefined
-  return pageRegistry[componentKey]
+  const key = String(componentKey || '').trim()
+  if (!key) return undefined
+  return pageRegistry[key]
+}
+
+export const resolveBuiltinPluginPageLoader = (pluginId?: string, pageKey?: string, path?: string) => {
+  const normalizedPluginId = String(pluginId || '').trim()
+  if (!normalizedPluginId) return undefined
+
+  const plugin = builtinPluginCatalog.find((item) => item.id === normalizedPluginId)
+  if (!plugin) return undefined
+
+  const normalizedPageKey = String(pageKey || '').trim()
+  const normalizedPath = String(path || '').trim()
+  const pages = plugin.adminPages || []
+  const page =
+    (normalizedPageKey ? pages.find((item) => item.key === normalizedPageKey) : undefined) ||
+    (normalizedPath ? pages.find((item) => item.path === normalizedPath) : undefined) ||
+    pages.find((item) => item.default) ||
+    pages[0]
+
+  return resolvePluginPageLoader(page?.component || page?.component_key)
 }
 
 export const resolvePluginIcon = (iconName?: string): Component => {
