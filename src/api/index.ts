@@ -26,6 +26,12 @@ export const getArticleVersions = (id: number) => request.get(`/articles/${id}/v
 export const restoreArticleVersion = (id: number, versionId: number) => request.post(`/articles/${id}/versions/${versionId}/restore`)
 export const duplicateArticle = (id: number) => request.post(`/articles/${id}/duplicate`)
 export const batchOperateArticles = (data: { ids: number[]; action: string }) => request.post('/articles/admin/batch', data)
+export const renderArticleForWechat = (data: {
+  title?: string
+  summary?: string
+  content: string
+  include_summary?: boolean
+}) => request.post('/articles/admin/render/wechat', data)
 export const likeArticle = (id: number) => request.post(`/articles/${id}/like`)
 export const unlikeArticle = (id: number) => request.delete(`/articles/${id}/like`)
 export const getArticleLikeStatus = (id: number) => request.get(`/articles/${id}/like/status`)

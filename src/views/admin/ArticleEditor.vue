@@ -59,6 +59,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="md">导出为 Markdown</el-dropdown-item>
                   <el-dropdown-item command="md-permanent">导出为 Markdown（永久链接）</el-dropdown-item>
+                  <el-dropdown-item command="wechat-copy">复制为公众号格式</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -627,6 +628,66 @@
       </div>
     </el-dialog>
 
+    <el-dialog
+      v-model="showWeChatExportDialog"
+      title="公众号格式复制"
+      width="980px"
+      class="editor-wechat-dialog"
+      destroy-on-close
+    >
+      <div class="wechat-export-shell" v-loading="wechatPreviewLoading">
+        <section class="wechat-export-lead">
+          <div>
+            <div class="drawer-section__eyebrow">WeChat Format</div>
+            <h3 class="wechat-export-lead__title">正文可直接复制到微信公众号编辑器</h3>
+            <p class="wechat-export-lead__desc">
+              这里使用和微信插件发布相同的渲染逻辑，输出的是带内联样式的 HTML 正文。
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <el-button :loading="wechatPreviewLoading" @click="renderWechatPreview">刷新预览</el-button>
+            <el-button type="primary" :disabled="!wechatRenderResult?.html" @click="copyWechatHtml">
+              复制正文到剪贴板
+            </el-button>
+          </div>
+        </section>
+
+        <section class="wechat-export-note">
+          <div class="editor-chip editor-chip-dark">公众号正文专用</div>
+          <p class="wechat-export-note__text">
+            标题和封面仍需在公众号后台单独填写；这里复制的是正文内容，摘要会作为导语块一起渲染。
+          </p>
+        </section>
+
+        <section v-if="wechatRenderResult?.warnings?.length" class="wechat-export-warning">
+          <div class="wechat-export-warning__title">粘贴前建议检查</div>
+          <div class="wechat-export-warning__list">
+            <div v-for="item in wechatRenderResult.warnings" :key="item">
+              {{ item }}
+            </div>
+          </div>
+        </section>
+
+        <section class="wechat-preview-stage">
+          <div class="wechat-preview-device">
+            <div class="wechat-preview-device__top">
+              <div class="wechat-preview-device__label">公众号正文预览</div>
+              <div class="wechat-preview-device__title">{{ form.title || '未命名文章' }}</div>
+            </div>
+
+            <div
+              v-if="wechatRenderResult?.html"
+              class="wechat-preview-device__body"
+              v-html="wechatRenderResult.html"
+            ></div>
+            <div v-else class="wechat-preview-empty">
+              当前还没有可预览内容，先输入正文后再生成公众号排版。
+            </div>
+          </div>
+        </section>
+      </div>
+    </el-dialog>
+
     <el-dialog v-model="showImageSelector" title="选择图片" width="520px">
       <div v-if="contentImages.length > 0" class="grid grid-cols-3 gap-4">
         <div
@@ -782,6 +843,11 @@ const aiCoverResult = ref<{
     resource_url?: string
   }>
 } | null>(null)
+type WechatRenderResult = {
+  html: string
+  plain_text: string
+  warnings: string[]
+}
 const aiKeywordsInput = ref('')
 const aiOutlineInput = ref('')
 const aiForm = ref({
@@ -887,6 +953,9 @@ const visibilityStateLabel = computed(() => {
 })
 const aiPluginEnabled = computed(() => pluginStore.isPluginEnabled('ai-assistant'))
 const wechatPluginInstalled = computed(() => pluginStore.isPluginInstalled('wechat-official-account'))
+const showWeChatExportDialog = ref(false)
+const wechatPreviewLoading = ref(false)
+const wechatRenderResult = ref<WechatRenderResult | null>(null)
 const submitButtonLabel = computed(() => {
   if (form.value.is_published) {
     return isEdit.value ? '更新并发布' : '发布文章'
@@ -1023,8 +1092,107 @@ const handleResourceSelect = (item: any) => {
   resourcePickerMode.value = 'content'
 }
 
+const renderWechatPreview = async () => {
+  if (!form.value.content.trim()) {
+    ElMessage.warning('请先输入正文')
+    return false
+  }
+
+  wechatPreviewLoading.value = true
+  try {
+    const res: any = await api.renderArticleForWechat({
+      title: form.value.title,
+      summary: form.value.summary,
+      content: form.value.content,
+      include_summary: true,
+    })
+
+    if (res.code === 200) {
+      wechatRenderResult.value = res.data
+      return true
+    }
+
+    ElMessage.error(res.msg || '公众号预览生成失败')
+    return false
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('公众号预览生成失败')
+    return false
+  } finally {
+    wechatPreviewLoading.value = false
+  }
+}
+
+const openWeChatExportDialog = async () => {
+  showWeChatExportDialog.value = true
+  await renderWechatPreview()
+}
+
+const copyRichHtmlFallback = (html: string) => {
+  const container = document.createElement('div')
+  container.innerHTML = html
+  container.setAttribute('contenteditable', 'true')
+  container.style.position = 'fixed'
+  container.style.left = '-9999px'
+  container.style.top = '0'
+  container.style.opacity = '0'
+  container.style.pointerEvents = 'none'
+  document.body.appendChild(container)
+
+  const selection = window.getSelection()
+  if (!selection) {
+    document.body.removeChild(container)
+    throw new Error('selection unavailable')
+  }
+
+  const range = document.createRange()
+  range.selectNodeContents(container)
+  selection.removeAllRanges()
+  selection.addRange(range)
+
+  const copied = document.execCommand('copy')
+
+  selection.removeAllRanges()
+  document.body.removeChild(container)
+
+  if (!copied) {
+    throw new Error('copy failed')
+  }
+}
+
+const copyWechatHtml = async () => {
+  if (!wechatRenderResult.value?.html) {
+    const ready = await renderWechatPreview()
+    if (!ready || !wechatRenderResult.value?.html) return
+  }
+
+  const html = wechatRenderResult.value.html
+  const plainText = wechatRenderResult.value.plain_text || form.value.content || form.value.summary || form.value.title
+
+  try {
+    if (navigator.clipboard && typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
+      const item = new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([plainText], { type: 'text/plain' }),
+      })
+      await navigator.clipboard.write([item])
+    } else {
+      copyRichHtmlFallback(html)
+    }
+    ElMessage.success('已复制公众号正文，可直接粘贴到微信公众号编辑器')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('复制失败，请检查浏览器剪贴板权限')
+  }
+}
+
 // 导出文章
-const handleExport = (command: string) => {
+const handleExport = async (command: string) => {
+  if (command === 'wechat-copy') {
+    await openWeChatExportDialog()
+    return
+  }
+
   if (!form.value.title) {
     ElMessage.warning('请先输入文章标题')
     return
@@ -2330,6 +2498,130 @@ onMounted(async () => {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
+.wechat-export-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.wechat-export-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.35rem 1.45rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(239, 246, 255, 0.92));
+}
+
+.wechat-export-lead__title {
+  margin-top: 0.45rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+.wechat-export-lead__desc {
+  margin-top: 0.45rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #64748b;
+}
+
+.wechat-export-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  border-radius: 1.25rem;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.wechat-export-note__text {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.75;
+  color: #64748b;
+}
+
+.wechat-export-warning {
+  padding: 1rem 1.15rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 251, 235, 0.92);
+  border: 1px solid rgba(251, 191, 36, 0.26);
+}
+
+.wechat-export-warning__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.wechat-export-warning__list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: #b45309;
+}
+
+.wechat-preview-stage {
+  padding: 1.5rem;
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.92));
+  border: 1px solid rgba(226, 232, 240, 0.88);
+}
+
+.wechat-preview-device {
+  max-width: 430px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 1.9rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #ffffff;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.12);
+}
+
+.wechat-preview-device__top {
+  padding: 1.15rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.98));
+}
+
+.wechat-preview-device__label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0ea5e9;
+}
+
+.wechat-preview-device__title {
+  margin-top: 0.6rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.wechat-preview-device__body {
+  padding: 1.25rem 1.15rem 1.5rem;
+}
+
+.wechat-preview-empty {
+  padding: 3.8rem 1.5rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
 @media (min-width: 1024px) {
   .workspace-shell__frame-split {
     flex-direction: row;
@@ -2380,6 +2672,12 @@ onMounted(async () => {
   .ai-cover-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .wechat-export-lead {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 768px) {
@@ -2399,6 +2697,14 @@ onMounted(async () => {
   .cover-action-grid,
   .cover-workbench__meta {
     grid-template-columns: 1fr;
+  }
+
+  .wechat-preview-stage,
+  .wechat-export-lead,
+  .wechat-export-note,
+  .wechat-export-warning {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 </style>
