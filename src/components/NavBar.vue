@@ -20,20 +20,51 @@
           </span>
         </div>
         <div class="hidden md:flex space-x-8 items-center">
-          <router-link 
-            v-for="link in navLinks" 
-            :key="link.path"
-            :to="link.path" 
-            class="relative group py-2 font-medium text-[17px] flex items-center gap-1.5 transition-colors duration-300"
-            :class="(isTransparentPage && isTop) ? 'text-white/90 hover:text-white drop-shadow-sm' : 'text-gray-600 hover:text-miyazaki-blue'"
-          >
-            <el-icon :size="16"><component :is="link.icon" /></el-icon>
-            {{ link.name }}
-            <span 
-              class="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
-              :class="(isTransparentPage && isTop) ? 'bg-white' : 'bg-miyazaki-blue'"
-            ></span>
-          </router-link>
+          <template v-for="link in navLinks" :key="link.name">
+            <div
+              v-if="link.children?.length"
+              class="nav-submenu group relative py-2 font-medium text-[17px]"
+              :class="navLinkClass"
+            >
+              <div class="flex items-center gap-1.5">
+                <el-icon :size="16"><component :is="link.icon" /></el-icon>
+                {{ link.name }}
+                <el-icon :size="14" class="transition-transform duration-300 group-hover:rotate-180"><ArrowDown /></el-icon>
+              </div>
+              <span
+                class="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+                :class="[navUnderlineClass, isGroupActive(link) ? 'w-full' : 'w-0 group-hover:w-full']"
+              ></span>
+              <div class="invisible absolute left-0 top-full z-20 pt-3 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div class="min-w-[12rem] rounded-[22px] border border-slate-200/80 bg-white/95 p-2 shadow-[0_20px_45px_rgba(15,23,42,0.12)] backdrop-blur">
+                  <router-link
+                    v-for="child in link.children"
+                    :key="child.path"
+                    :to="child.path"
+                    class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors duration-200"
+                    :class="isChildActive(child) ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                  >
+                    <el-icon :size="16"><component :is="child.icon || link.icon" /></el-icon>
+                    {{ child.name }}
+                  </router-link>
+                </div>
+              </div>
+            </div>
+
+            <router-link
+              v-else
+              :to="link.path"
+              class="relative group py-2 font-medium text-[17px] flex items-center gap-1.5 transition-colors duration-300"
+              :class="navLinkClass"
+            >
+              <el-icon :size="16"><component :is="link.icon" /></el-icon>
+              {{ link.name }}
+              <span
+                class="absolute bottom-0 left-0 h-0.5 transition-all duration-300"
+                :class="[navUnderlineClass, isChildActive(link) ? 'w-full' : 'w-0 group-hover:w-full']"
+              ></span>
+            </router-link>
+          </template>
           
           <div class="relative group ml-4">
             <input 
@@ -109,16 +140,31 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar, Connection } from '@element-plus/icons-vue'
+import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar, Connection, DataBoard } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { NEWSNOW_PLUGIN_ID, usePublicPluginStore } from '../stores/publicPlugins'
 import { useUserStore } from '../stores/user'
 import { useSiteStore } from '../stores/site'
 import UserAvatar from './UserAvatar.vue'
+
+type NavChildLink = {
+  name: string
+  path: string
+  icon?: any
+}
+
+type NavLink = {
+  name: string
+  path: string
+  icon: any
+  children?: NavChildLink[]
+}
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const siteStore = useSiteStore()
+const publicPluginStore = usePublicPluginStore()
 
 // 搜索
 const searchKeyword = ref('')
@@ -129,13 +175,38 @@ const handleSearch = () => {
   }
 }
 
-const navLinks = [
-  { name: '首页', path: '/', icon: HomeFilled },
-  { name: '分类', path: '/category', icon: Menu },
-  { name: '友链', path: '/friends', icon: Connection },
-  { name: '留言板', path: '/message', icon: ChatLineSquare },
-  { name: '建站日志', path: '/changelog', icon: Calendar },
-]
+const newsPluginEnabled = computed(() => publicPluginStore.hasPlugin(NEWSNOW_PLUGIN_ID))
+const navLinks = computed<NavLink[]>(() => {
+  const contentEntry = newsPluginEnabled.value
+    ? [{
+        name: '内容',
+        path: '/',
+        icon: HomeFilled,
+        children: [
+          { name: '博客', path: '/', icon: HomeFilled },
+          { name: '新闻', path: '/news', icon: DataBoard },
+        ],
+      }]
+    : [{ name: '首页', path: '/', icon: HomeFilled }]
+
+  return [
+    ...contentEntry,
+    { name: '分类', path: '/category', icon: Menu },
+    { name: '友链', path: '/friends', icon: Connection },
+    { name: '留言板', path: '/message', icon: ChatLineSquare },
+    { name: '建站日志', path: '/changelog', icon: Calendar },
+  ]
+})
+const navLinkClass = computed(() => (
+  (isTransparentPage.value && isTop.value)
+    ? 'text-white/90 hover:text-white drop-shadow-sm'
+    : 'text-gray-600 hover:text-miyazaki-blue'
+))
+const navUnderlineClass = computed(() => (
+  (isTransparentPage.value && isTop.value) ? 'bg-white' : 'bg-miyazaki-blue'
+))
+const isChildActive = (link: NavChildLink | NavLink) => route.path === link.path
+const isGroupActive = (link: NavLink) => Boolean(link.children?.some((child) => route.path === child.path))
 
 // 导航栏滚动隐藏逻辑
 const isHidden = ref(false)
@@ -181,6 +252,7 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   // 初始化检查
   updateScrollState()
+  publicPluginStore.ensureLoaded().catch(() => {})
 })
 
 onUnmounted(() => {

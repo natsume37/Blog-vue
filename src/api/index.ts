@@ -59,6 +59,7 @@ export const getSiteConfig = () => request.get('/site/config')
 export const updateSiteConfig = (data: any) => request.put('/site/config', data)
 export const getCommentRiskConfig = () => request.get('/site/comment-risk-config')
 export const updateCommentRiskConfig = (data: any) => request.put('/site/comment-risk-config', data)
+export const getNewsNowRealtime = (params?: any) => request.get('/plugins/newsnow/realtime', { params })
 
 // Changelog
 export const getChangelogs = () => request.get('/changelogs')
@@ -114,6 +115,7 @@ export const testMailConfig = (config: any, emailTo: string) =>
 // Plugins (Admin)
 export const getAdminPluginCatalog = () => request.get('/plugins')
 export const getAdminPluginMarket = () => request.get('/plugins/market')
+export const getPublicPlugins = () => request.get('/plugins/public')
 export const installAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/install`)
 export const enableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/enable`)
 export const disableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/disable`)

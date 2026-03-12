@@ -22,7 +22,7 @@
             <el-button
               v-if="aiPluginEnabled"
               class="!rounded-full !border-sky-200 !bg-sky-50 !px-5 !py-2.5 !text-sky-700 hover:!border-sky-300 hover:!bg-sky-100"
-              @click="showAIDrawer = true"
+              @click="openAIDraftDrawer"
             >
               <el-icon class="mr-2"><MagicStick /></el-icon>
               AI 草稿
@@ -430,41 +430,137 @@
       </div>
     </el-drawer>
 
-    <el-drawer v-if="aiPluginEnabled" v-model="showAIDrawer" title="AI 草稿生成" size="460px" class="editor-drawer">
-      <div class="drawer-stack">
-        <section class="drawer-section">
-          <div class="drawer-section__head">
-            <div class="drawer-section__eyebrow">AI Draft</div>
-            <h3 class="drawer-section__title">生成初稿并填充编辑器</h3>
+    <el-drawer v-if="aiPluginEnabled" v-model="showAIDrawer" title="AI 草稿生成" size="560px" class="editor-drawer">
+      <div class="drawer-stack drawer-stack-ai">
+        <section class="ai-draft-overview">
+          <div class="ai-draft-overview__head">
+            <div>
+              <div class="drawer-section__eyebrow">AI Draft</div>
+              <h3 class="ai-draft-overview__title">先把主题和结构钉住，再让模型替你拉出第一稿</h3>
+              <p class="ai-draft-overview__desc">
+                这里会同时生成标题、摘要和 Markdown 正文。你只需要把主题、关键词、大纲和语气交代清楚。
+              </p>
+            </div>
+            <div class="ai-draft-overview__status">
+              <span class="editor-chip editor-chip-dark">{{ aiDraftReadinessLabel }}</span>
+              <span class="editor-chip">{{ aiForm.include_summary ? '附带摘要' : '仅生成正文' }}</span>
+            </div>
           </div>
+
+          <div class="settings-overview-grid ai-draft-overview__metrics">
+            <div class="settings-overview-metric">
+              <div class="settings-overview-metric__label">目标字数</div>
+              <div class="settings-overview-metric__value">{{ aiForm.target_words }}</div>
+              <div class="settings-overview-metric__hint">按当前设定控制篇幅密度</div>
+            </div>
+            <div class="settings-overview-metric">
+              <div class="settings-overview-metric__label">关键词</div>
+              <div class="settings-overview-metric__value">{{ aiDraftKeywordCount }}</div>
+              <div class="settings-overview-metric__hint">建议 3 到 6 个核心词</div>
+            </div>
+            <div class="settings-overview-metric">
+              <div class="settings-overview-metric__label">大纲节点</div>
+              <div class="settings-overview-metric__value">{{ aiDraftOutlineCount }}</div>
+              <div class="settings-overview-metric__hint">层级越清楚，成稿越稳定</div>
+            </div>
+            <div class="settings-overview-metric">
+              <div class="settings-overview-metric__label">上下文</div>
+              <div class="settings-overview-metric__value">{{ aiDraftContextCount }}</div>
+              <div class="settings-overview-metric__hint">可补充摘要、限制和背景</div>
+            </div>
+          </div>
+
+          <div class="ai-draft-quick-actions">
+            <el-button class="!rounded-full" @click="seedAIDraftFromArticle(false)">从当前文章带入</el-button>
+            <el-button class="!rounded-full" @click="applyAIDraftPreset('tech')">技术实战模板</el-button>
+            <el-button class="!rounded-full" @click="applyAIDraftPreset('tutorial')">教程拆解模板</el-button>
+            <el-button class="!rounded-full" @click="applyAIDraftPreset('review')">复盘总结模板</el-button>
+          </div>
+        </section>
+
+        <section class="drawer-section drawer-section-rich">
+          <div class="drawer-section__head drawer-section__head-rich">
+            <div>
+              <div class="drawer-section__eyebrow">Prompt</div>
+              <h3 class="drawer-section__title">主题与表达方式</h3>
+            </div>
+            <el-button size="small" @click="seedAIDraftFromArticle(true)">强制重置为当前文章线索</el-button>
+          </div>
+
           <el-form label-position="top">
             <el-form-item label="主题">
               <el-input v-model="aiForm.topic" placeholder="例如：Vue3 项目组件化重构实践" />
             </el-form-item>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <el-form-item label="风格">
+                <el-input v-model="aiForm.style" placeholder="例如：技术博客 / 教程拆解 / 复盘总结" />
+              </el-form-item>
+              <el-form-item label="语气">
+                <el-input v-model="aiForm.tone" placeholder="例如：专业且易懂 / 冷静克制 / 适合初学者" />
+              </el-form-item>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <el-form-item label="目标字数">
+                <el-input-number v-model="aiForm.target_words" :min="200" :max="5000" :step="100" class="w-full" />
+              </el-form-item>
+              <div class="ai-draft-option-card">
+                <div class="ai-draft-option-card__title">生成策略</div>
+                <div class="ai-draft-option-card__desc">如果当前文章还没有摘要，建议保持开启，方便后续直接进入发布流程。</div>
+                <div class="ai-draft-option-card__control">
+                  <span>{{ aiForm.include_summary ? '同时生成摘要' : '仅生成正文' }}</span>
+                  <el-switch v-model="aiForm.include_summary" />
+                </div>
+              </div>
+            </div>
+          </el-form>
+        </section>
+
+        <section class="drawer-section drawer-section-rich">
+          <div class="drawer-section__head">
+            <div class="drawer-section__eyebrow">Structure</div>
+            <h3 class="drawer-section__title">关键词、大纲与上下文</h3>
+          </div>
+
+          <el-form label-position="top">
             <el-form-item label="关键词">
               <el-input v-model="aiKeywordsInput" placeholder="用逗号分隔，例如：Vue3, 组件化, 可拓展性" />
             </el-form-item>
             <el-form-item label="大纲（每行一条）">
-              <el-input v-model="aiOutlineInput" type="textarea" :rows="5" placeholder="背景&#10;设计目标&#10;实现路径&#10;总结" />
-            </el-form-item>
-            <div class="grid grid-cols-2 gap-3">
-              <el-form-item label="风格">
-                <el-input v-model="aiForm.style" />
-              </el-form-item>
-              <el-form-item label="语气">
-                <el-input v-model="aiForm.tone" />
-              </el-form-item>
-            </div>
-            <el-form-item label="目标字数">
-              <el-input-number v-model="aiForm.target_words" :min="200" :max="5000" :step="100" class="w-full" />
+              <el-input
+                v-model="aiOutlineInput"
+                type="textarea"
+                :rows="6"
+                placeholder="背景&#10;设计目标&#10;实现路径&#10;关键细节&#10;总结"
+              />
             </el-form-item>
             <el-form-item label="已有上下文（可选）">
-              <el-input v-model="aiForm.existing_context" type="textarea" :rows="4" />
+              <el-input
+                v-model="aiForm.existing_context"
+                type="textarea"
+                :rows="5"
+                placeholder="可以补充受众、已有结论、限制条件，或者你已经写好的片段。"
+              />
             </el-form-item>
-            <div class="mt-4">
-              <el-button type="primary" :loading="aiGenerating" @click="handleGenerateDraft">生成草稿并填充编辑器</el-button>
-            </div>
           </el-form>
+        </section>
+
+        <section class="ai-draft-submit">
+          <div class="ai-draft-submit__content">
+            <div class="ai-draft-submit__title">生成后会直接回填到当前编辑器</div>
+            <div class="ai-draft-submit__desc">
+              标题、摘要和正文会按返回结果覆盖当前内容。若你已经写了部分正文，建议先保存草稿。
+            </div>
+          </div>
+          <el-button
+            type="primary"
+            :loading="aiGenerating"
+            class="!rounded-full !border-none !bg-slate-900 !px-6 hover:!bg-slate-800"
+            @click="handleGenerateDraft"
+          >
+            生成草稿并填充编辑器
+          </el-button>
         </section>
       </div>
     </el-drawer>
@@ -956,6 +1052,14 @@ const wechatPluginInstalled = computed(() => pluginStore.isPluginInstalled('wech
 const showWeChatExportDialog = ref(false)
 const wechatPreviewLoading = ref(false)
 const wechatRenderResult = ref<WechatRenderResult | null>(null)
+const aiDraftKeywordCount = computed(() => normalizeListInput(aiKeywordsInput.value).length)
+const aiDraftOutlineCount = computed(() => normalizeListInput(aiOutlineInput.value).length)
+const aiDraftContextCount = computed(() => (aiForm.value.existing_context || '').trim().length)
+const aiDraftReadinessLabel = computed(() => {
+  if (aiForm.value.topic.trim() && aiDraftOutlineCount.value >= 3) return '可生成'
+  if (aiForm.value.topic.trim()) return '待补全结构'
+  return '待设定主题'
+})
 const submitButtonLabel = computed(() => {
   if (form.value.is_published) {
     return isEdit.value ? '更新并发布' : '发布文章'
@@ -1279,6 +1383,66 @@ const openWeChatPublisher = () => {
     path: '/admin/plugins/wechat-official-account/publisher',
     query: { articleId: String(route.params.id) }
   })
+}
+
+const aiDraftPresetMap = {
+  tech: {
+    style: '技术博客',
+    tone: '专业且易懂',
+    outline: ['问题背景', '目标与约束', '实现方案', '关键细节', '总结'],
+  },
+  tutorial: {
+    style: '教程拆解',
+    tone: '循序渐进，适合实操',
+    outline: ['适用场景', '准备工作', '步骤拆解', '常见问题', '总结'],
+  },
+  review: {
+    style: '复盘总结',
+    tone: '冷静克制，有判断',
+    outline: ['背景', '过程', '结果', '问题与反思', '后续计划'],
+  },
+} as const
+
+const seedAIDraftFromArticle = (force = false) => {
+  const title = form.value.title.trim()
+  const summary = form.value.summary.trim()
+  const category = selectedCategoryName.value !== '未分类' ? selectedCategoryName.value : ''
+  const tagsText = selectedTagNames.value.join('，')
+
+  if ((force || !aiForm.value.topic.trim()) && title) {
+    aiForm.value.topic = title
+  }
+
+  if (force || !aiKeywordsInput.value.trim()) {
+    aiKeywordsInput.value = [category, tagsText].filter(Boolean).join('，')
+  }
+
+  if (force || !aiOutlineInput.value.trim()) {
+    aiOutlineInput.value = ['背景与问题', '核心观点', '关键实现', '实践建议', '总结'].join('\n')
+  }
+
+  if (force || !aiForm.value.existing_context.trim()) {
+    aiForm.value.existing_context = [
+      summary ? `文章摘要：${summary}` : '',
+      category ? `文章分类：${category}` : '',
+      tagsText ? `文章标签：${tagsText}` : '',
+    ].filter(Boolean).join('\n')
+  }
+}
+
+const applyAIDraftPreset = (preset: keyof typeof aiDraftPresetMap) => {
+  const config = aiDraftPresetMap[preset]
+  aiForm.value.style = config.style
+  aiForm.value.tone = config.tone
+  aiOutlineInput.value = config.outline.join('\n')
+  if (!aiForm.value.topic.trim() && form.value.title.trim()) {
+    aiForm.value.topic = form.value.title.trim()
+  }
+}
+
+const openAIDraftDrawer = () => {
+  showAIDrawer.value = true
+  seedAIDraftFromArticle(false)
 }
 
 const defaultAICoverNegativePrompt = '不要文字、不要水印、不要 logo、不要低清晰度、不要杂乱背景、不要畸形结构'
@@ -2007,6 +2171,114 @@ onMounted(async () => {
   color: var(--editor-muted);
 }
 
+.drawer-stack-ai {
+  gap: 1.1rem;
+}
+
+.ai-draft-overview {
+  display: grid;
+  gap: 1rem;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.96));
+  padding: 1.15rem;
+  box-shadow: 0 24px 60px rgba(148, 163, 184, 0.12);
+}
+
+.ai-draft-overview__head {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ai-draft-overview__title {
+  margin-top: 0.5rem;
+  font-size: 1.18rem;
+  font-weight: 700;
+  line-height: 1.32;
+  color: var(--editor-text);
+}
+
+.ai-draft-overview__desc {
+  margin-top: 0.55rem;
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: var(--editor-muted);
+}
+
+.ai-draft-overview__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.ai-draft-overview__metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ai-draft-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.ai-draft-option-card {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(248, 250, 252, 0.86);
+  padding: 1rem;
+}
+
+.ai-draft-option-card__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--editor-text);
+}
+
+.ai-draft-option-card__desc {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--editor-muted);
+}
+
+.ai-draft-option-card__control {
+  margin-top: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.ai-draft-submit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(145deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.96));
+  padding: 1.05rem 1.1rem;
+}
+
+.ai-draft-submit__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--editor-text);
+}
+
+.ai-draft-submit__desc {
+  margin-top: 0.4rem;
+  font-size: 0.84rem;
+  line-height: 1.75;
+  color: var(--editor-muted);
+}
+
 .drawer-switch-list {
   display: grid;
   gap: 0.75rem;
@@ -2645,6 +2917,11 @@ onMounted(async () => {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .ai-draft-overview__head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: flex-start;
+  }
+
   .drawer-switch-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2696,6 +2973,10 @@ onMounted(async () => {
 
   .cover-action-grid,
   .cover-workbench__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-draft-overview__metrics {
     grid-template-columns: 1fr;
   }
 
