@@ -2,6 +2,8 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import Home from '../views/Home.vue'
 import { useUserStore } from '../stores/user'
 
+const NEWSNOW_EXTERNAL_URL = 'https://newsnow.busiyi.world/'
+
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -32,7 +34,11 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/news',
     name: 'NewsNow',
-    component: () => import('../views/NewsNow.vue')
+    component: () => import('../views/NewsNow.vue'),
+    beforeEnter: () => {
+      window.location.assign(NEWSNOW_EXTERNAL_URL)
+      return false
+    }
   },
   {
     path: '/about',
