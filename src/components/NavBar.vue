@@ -140,7 +140,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar, Connection, DataBoard } from '@element-plus/icons-vue'
+import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar, Connection, DataBoard, Grid } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { NEWSNOW_PLUGIN_ID, usePublicPluginStore } from '../stores/publicPlugins'
 import { useUserStore } from '../stores/user'
@@ -191,6 +191,7 @@ const navLinks = computed<NavLink[]>(() => {
 
   return [
     ...contentEntry,
+    { name: '工具', path: '/tools', icon: Grid },
     { name: '分类', path: '/category', icon: Menu },
     { name: '友链', path: '/friends', icon: Connection },
     { name: '留言板', path: '/message', icon: ChatLineSquare },

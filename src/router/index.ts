@@ -41,6 +41,11 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
+    path: '/tools',
+    name: 'Tools',
+    component: () => import('../views/Tools.vue')
+  },
+  {
     path: '/about',
     name: 'About',
     component: () => import('../views/About.vue')
@@ -134,6 +139,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'friend-links',
         name: 'AdminFriendLinks',
         component: () => import('../views/admin/FriendLinkManage.vue')
+      },
+      {
+        path: 'tools',
+        name: 'AdminTools',
+        component: () => import('../views/admin/ToolManage.vue')
       },
       {
         path: 'resources',

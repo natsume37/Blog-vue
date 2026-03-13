@@ -12,6 +12,7 @@
           <h4 class="font-bold text-gray-800 mb-6">快速链接</h4>
           <ul class="space-y-3 text-gray-500">
             <li><router-link to="/" class="hover:text-miyazaki-blue transition-colors">首页</router-link></li>
+            <li><router-link to="/tools" class="hover:text-miyazaki-blue transition-colors">工具墙</router-link></li>
             <li><router-link to="/category" class="hover:text-miyazaki-blue transition-colors">文章分类</router-link></li>
             <li><router-link to="/friends" class="hover:text-miyazaki-blue transition-colors">友链</router-link></li>
             <li><router-link to="/message" class="hover:text-miyazaki-blue transition-colors">留言板</router-link></li>

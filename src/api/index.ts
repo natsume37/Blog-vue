@@ -75,6 +75,13 @@ export const createFriendLink = (data: any) => request.post('/friend-links', dat
 export const updateFriendLink = (id: number, data: any) => request.put(`/friend-links/${id}`, data)
 export const deleteFriendLink = (id: number) => request.delete(`/friend-links/${id}`)
 
+// Tool Items
+export const getToolItems = (params?: any) => request.get('/tools', { params })
+export const getAdminToolItems = (params?: any) => request.get('/tools/admin/list', { params })
+export const createToolItem = (data: any) => request.post('/tools', data)
+export const updateToolItem = (id: number, data: any) => request.put(`/tools/${id}`, data)
+export const deleteToolItem = (id: number) => request.delete(`/tools/${id}`)
+
 // Users (Admin)
 export const getAdminUsers = (params: any) => request.get('/users/admin/list', { params })
 export const createAdminUser = (data: any) => request.post('/users/admin', data)
