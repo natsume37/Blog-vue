@@ -159,6 +159,7 @@ import {
   Connection,
   Grid,
   DataBoard,
+  Reading,
   Menu,
   Fold,
   Expand
@@ -178,6 +179,7 @@ const mobileDrawerVisible = ref(false)
 const baseMenuItems = [
   { path: '/admin/dashboard', label: '仪表盘', icon: Odometer },
   { path: '/admin/articles', label: '文章管理', icon: Document },
+  { path: '/admin/records/visibility', label: '记录权限', icon: Reading },
   { path: '/admin/categories', label: '分类/标签', icon: Collection },
   { path: '/admin/comments', label: '评论管理', icon: ChatDotSquare },
   { path: '/admin/friend-links', label: '友链管理', icon: Connection },

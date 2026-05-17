@@ -66,6 +66,12 @@ export const getBookRecords = (params?: any, silent = false) => request.get('/re
 export const getBookRecordStats = (silent = false) => request.get('/records/books/stats', { silent } as any)
 export const getBookReadingTimeStats = (silent = false) => request.get('/records/books/time-stats', { silent } as any)
 export const getBookRecordDetail = (id: number, silent = false) => request.get(`/records/books/${id}`, { silent } as any)
+export const getMovieRecords = (params?: any, silent = false) => request.get('/records/movies', { params, silent } as any)
+export const getMovieRecordStats = (silent = false) => request.get('/records/movies/stats', { silent } as any)
+export const getAdminBookRecords = (params?: any) => request.get('/records/admin/books', { params })
+export const updateBookRecordVisibility = (id: number, visibility: string) => request.patch(`/records/admin/books/${id}/visibility`, { visibility })
+export const getAdminMovieRecords = (params?: any) => request.get('/records/admin/movies', { params })
+export const updateMovieRecordVisibility = (id: number, visibility: string) => request.patch(`/records/admin/movies/${id}/visibility`, { visibility })
 export const getWeReadSyncStatus = (silent = false) => request.get('/records/weread/status', { silent } as any)
 export const syncWeReadRecords = () => request.post('/records/weread/sync')
 

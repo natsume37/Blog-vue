@@ -56,8 +56,7 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/records/books/time',
-    name: 'BookReadingTimeStats',
-    component: () => import('../views/BookReadingTimeStats.vue')
+    redirect: '/records/books'
   },
   {
     path: '/records/movies',
@@ -104,6 +103,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'articles',
         name: 'AdminArticles',
         component: () => import('../views/admin/ArticleList.vue')
+      },
+      {
+        path: 'records/visibility',
+        name: 'AdminRecordVisibility',
+        component: () => import('../views/admin/RecordVisibilityManage.vue')
       },
       {
         path: 'articles/:id',

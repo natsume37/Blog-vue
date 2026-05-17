@@ -21,7 +21,15 @@ import {
   VideoPlay,
   View,
 } from '@element-plus/icons-vue'
-import { getBookRecords, getBookRecordStats, getWeReadSyncStatus, syncWeReadRecords } from '../api'
+import {
+  getBookRecords,
+  getBookRecordStats,
+  getBookReadingTimeStats,
+  getMovieRecords,
+  getMovieRecordStats,
+  getWeReadSyncStatus,
+  syncWeReadRecords,
+} from '../api'
 import { useUserStore } from '../stores/user'
 
 type RecordKind = 'books' | 'movies'
@@ -42,6 +50,7 @@ type RecordItem = {
   color: string
   accent: string
   cover?: string
+  visibility?: string
 }
 
 type BookStats = {
@@ -51,6 +60,19 @@ type BookStats = {
   average_rating: number
   read_duration: string
   last_sync_at?: string | null
+}
+
+type BookTimeStats = {
+  total_read_duration: string
+  day_average_duration: string
+  read_days: number
+  active_days: number
+  daily: Array<{
+    timestamp: number
+    label: string
+    read_seconds: number
+    read_duration: string
+  }>
 }
 
 type SyncStatus = {
@@ -64,6 +86,13 @@ type SyncStatus = {
   notes_synced?: number
 }
 
+type MovieStats = {
+  monthly_count: number
+  finished_count: number
+  average_rating: number
+  total_duration: string
+}
+
 const props = defineProps<{
   kind: RecordKind
 }>()
@@ -74,8 +103,13 @@ const activeStatus = ref('全部')
 const searchKeyword = ref('')
 const bookApiRecords = ref<RecordItem[]>([])
 const bookStats = ref<BookStats | null>(null)
+const bookTimeStats = ref<BookTimeStats | null>(null)
+const movieStats = ref<MovieStats | null>(null)
 const bookLoading = ref(false)
+const movieLoading = ref(false)
 const bookApiLoaded = ref(false)
+const movieApiLoaded = ref(false)
+const movieApiRecords = ref<RecordItem[]>([])
 const syncLoading = ref(false)
 const syncStatus = ref<SyncStatus | null>(null)
 
@@ -226,6 +260,11 @@ const activeBookRecords = computed(() => {
   return bookApiRecords.value
 })
 
+const activeMovieRecords = computed(() => {
+  if (!movieApiLoaded.value) return movieRecords
+  return movieApiRecords.value
+})
+
 const formatDate = (value?: string | null) => {
   if (!value) return '-'
   const date = new Date(value)
@@ -238,6 +277,12 @@ const formatSyncTime = (value?: string | null) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '尚未同步'
   return `${formatDate(value)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+const visibilityLabel = (value?: string) => {
+  if (value === 'login') return '登录可见'
+  if (value === 'private') return '仅管理员'
+  return '公开'
 }
 
 const transformBookRecord = (item: any): RecordItem => ({
@@ -256,6 +301,26 @@ const transformBookRecord = (item: any): RecordItem => ({
   color: String(item.color || '#2f6c8f'),
   accent: String(item.accent || '#224c4a'),
   cover: String(item.cover || ''),
+  visibility: String(item.visibility || 'public'),
+})
+
+const transformMovieRecord = (item: any): RecordItem => ({
+  id: Number(item.id),
+  title: String(item.title || '未命名影片'),
+  creator: String(item.director || '未知导演'),
+  status: String(item.status || '想看'),
+  format: String(item.format || '电影'),
+  progress: Number(item.progress || 0),
+  rating: Number(item.rating || 0),
+  date: formatDate(item.watched_at),
+  duration: String(item.duration || '0 min'),
+  paceLabel: `${String(item.duration || '0 min')} · ${visibilityLabel(item.visibility)}`,
+  note: String(item.note || '暂无观影笔记'),
+  tags: Array.isArray(item.tags) && item.tags.length ? item.tags.map(String) : ['电影'],
+  color: String(item.color || '#2f5d7c'),
+  accent: String(item.accent || '#d6a35d'),
+  cover: String(item.cover || ''),
+  visibility: String(item.visibility || 'public'),
 })
 
 const config = computed(() => {
@@ -281,10 +346,12 @@ const config = computed(() => {
         { label: '本月阅读', value: String(stats?.monthly_count ?? 9), suffix: '本', icon: Reading },
         { label: '完成率', value: String(stats?.completion_rate ?? 72), suffix: '%', icon: Finished },
         { label: '笔记', value: String(stats?.note_count ?? 186), suffix: '条', icon: EditPen },
+        { label: '累计阅读', value: String(bookTimeStats.value?.total_read_duration || stats?.read_duration || '0分钟'), suffix: '', icon: Timer },
       ],
     }
   }
 
+  const stats = movieStats.value
   return {
     eyebrow: 'Cinema Log',
     title: '电影记录',
@@ -299,12 +366,12 @@ const config = computed(() => {
     detailTitle: '影片档案',
     progressLabel: '观看进度',
     durationLabel: '片长 / 累计',
-    records: movieRecords,
+    records: activeMovieRecords.value,
     statuses: ['全部', '已看完', '想看', '重看中'],
     stats: [
-      { label: '本月观影', value: '14', suffix: '部', icon: VideoPlay },
-      { label: '平均评分', value: '4.6', suffix: '/5', icon: StarFilled },
-      { label: '长评', value: '7', suffix: '篇', icon: EditPen },
+      { label: '本月观影', value: String(stats?.monthly_count ?? 14), suffix: '部', icon: VideoPlay },
+      { label: '平均评分', value: String(stats?.average_rating ?? 4.6), suffix: '/5', icon: StarFilled },
+      { label: '已看完', value: String(stats?.finished_count ?? 7), suffix: '部', icon: EditPen },
     ],
   }
 })
@@ -334,10 +401,20 @@ const averageRating = computed(() => {
 })
 
 const completionCount = computed(() => config.value.records.filter((item) => item.progress === 100).length)
+const recordLoading = computed(() => props.kind === 'books' ? bookLoading.value : movieLoading.value)
+const emptyMessage = computed(() => (
+  props.kind === 'books'
+    ? '暂无可见读书记录。管理员可以在后台调整图书可见范围，或稍后等待微信读书同步。'
+    : '暂无可见电影记录。管理员可以在后台调整电影可见范围。'
+))
+const bookTimePeakSeconds = computed(() => Math.max(1, ...(bookTimeStats.value?.daily || []).map((item) => item.read_seconds)))
+const bookTimeChartPoints = computed(() => (bookTimeStats.value?.daily || []).slice(-10).map((item) => ({
+  ...item,
+  height: item.read_seconds <= 0 ? 3 : Math.max(12, Math.round((item.read_seconds / bookTimePeakSeconds.value) * 100)),
+})))
 
 const routeLinks = [
   { label: '读书', to: '/records/books', icon: Reading },
-  { label: '时长', to: '/records/books/time', icon: DataAnalysis },
   { label: '电影', to: '/records/movies', icon: Film },
 ]
 
@@ -345,18 +422,23 @@ const loadBookRecords = async () => {
   if (props.kind !== 'books') return
   bookLoading.value = true
   try {
-    const [recordsResRaw, statsResRaw] = await Promise.all([
+    const [recordsResRaw, statsResRaw, timeStatsResRaw] = await Promise.all([
       getBookRecords({}, true),
       getBookRecordStats(true),
+      getBookReadingTimeStats(true),
     ])
     const recordsRes: any = recordsResRaw
     const statsRes: any = statsResRaw
+    const timeStatsRes: any = timeStatsResRaw
     if (recordsRes?.code === 200 && Array.isArray(recordsRes.data)) {
       bookApiRecords.value = recordsRes.data.map(transformBookRecord)
       bookApiLoaded.value = true
     }
     if (statsRes?.code === 200 && statsRes.data) {
       bookStats.value = statsRes.data
+    }
+    if (timeStatsRes?.code === 200 && timeStatsRes.data) {
+      bookTimeStats.value = timeStatsRes.data
     }
   } catch (_error) {
     bookApiLoaded.value = false
@@ -373,6 +455,38 @@ const loadBookRecords = async () => {
     } catch (_error) {
       syncStatus.value = null
     }
+  }
+}
+
+const loadMovieRecords = async () => {
+  if (props.kind !== 'movies') return
+  movieLoading.value = true
+  try {
+    const [recordsResRaw, statsResRaw] = await Promise.all([
+      getMovieRecords({}, true),
+      getMovieRecordStats(true),
+    ])
+    const recordsRes: any = recordsResRaw
+    const statsRes: any = statsResRaw
+    if (recordsRes?.code === 200 && Array.isArray(recordsRes.data)) {
+      movieApiRecords.value = recordsRes.data.map(transformMovieRecord)
+      movieApiLoaded.value = true
+    }
+    if (statsRes?.code === 200 && statsRes.data) {
+      movieStats.value = statsRes.data
+    }
+  } catch (_error) {
+    movieApiLoaded.value = false
+  } finally {
+    movieLoading.value = false
+  }
+}
+
+const loadRecords = () => {
+  if (props.kind === 'books') {
+    loadBookRecords()
+  } else {
+    loadMovieRecords()
   }
 }
 
@@ -398,14 +512,14 @@ const handleSyncWeRead = async () => {
 }
 
 onMounted(() => {
-  loadBookRecords()
+  loadRecords()
 })
 
 watch(() => props.kind, () => {
   activeStatus.value = '全部'
   selectedIndex.value = 0
   searchKeyword.value = ''
-  loadBookRecords()
+  loadRecords()
 })
 
 watch([activeStatus, searchKeyword], () => {
@@ -486,6 +600,31 @@ watch([activeStatus, searchKeyword], () => {
           </div>
         </section>
 
+        <section v-if="props.kind === 'books'" class="book-time-panel" aria-label="阅读时长统计">
+          <div class="book-time-panel__copy">
+            <span class="record-eyebrow">
+              <el-icon><DataAnalysis /></el-icon>
+              Reading Time
+            </span>
+            <h2>阅读时长统计</h2>
+            <p>
+              累计 {{ bookTimeStats?.total_read_duration || bookStats?.read_duration || '0分钟' }}，
+              日均 {{ bookTimeStats?.day_average_duration || '0分钟' }}，
+              活跃 {{ bookTimeStats?.active_days || 0 }} 天。
+            </p>
+          </div>
+          <div v-if="bookTimeChartPoints.length" class="book-time-bars">
+            <div v-for="point in bookTimeChartPoints" :key="point.timestamp" class="book-time-bars__item">
+              <span>{{ point.read_duration }}</span>
+              <i :style="{ height: `${point.height}%` }"></i>
+              <small>{{ point.label }}</small>
+            </div>
+          </div>
+          <div v-else class="book-time-empty">
+            暂无阅读时长数据
+          </div>
+        </section>
+
         <section class="record-content">
           <div class="record-panel record-list-panel">
             <div class="panel-toolbar">
@@ -503,11 +642,11 @@ watch([activeStatus, searchKeyword], () => {
               </div>
             </div>
 
-            <div v-if="props.kind === 'books' && bookLoading" class="record-empty">
-              正在读取微信读书缓存...
+            <div v-if="recordLoading" class="record-empty">
+              {{ props.kind === 'books' ? '正在读取微信读书缓存...' : '正在读取电影记录...' }}
             </div>
             <div v-else-if="!filteredRecords.length" class="record-empty">
-              暂无读书记录。配置 API Key 后可同步微信读书，或稍后再试。
+              {{ emptyMessage }}
             </div>
             <div v-else class="record-list">
               <button
@@ -521,9 +660,12 @@ watch([activeStatus, searchKeyword], () => {
                 <span class="cover-art" :style="{ '--cover': item.color, '--cover-accent': item.accent }">
                   <span></span>
                 </span>
-                <span class="record-row__body">
-                  <span class="record-row__title">{{ item.title }}</span>
-                  <span class="record-row__meta">{{ item.creator }} · {{ item.format }}</span>
+                  <span class="record-row__body">
+                    <span class="record-row__title">{{ item.title }}</span>
+                  <span class="record-row__meta">
+                    {{ item.creator }} · {{ item.format }}
+                    <template v-if="userStore.isAdmin"> · {{ visibilityLabel(item.visibility) }}</template>
+                  </span>
                   <span class="progress-track" aria-hidden="true">
                     <span :style="{ width: `${item.progress}%` }"></span>
                   </span>
@@ -545,7 +687,7 @@ watch([activeStatus, searchKeyword], () => {
             <div class="detail-copy">
               <div class="detail-topline">
                 <span>{{ selectedRecord.status }}</span>
-                <span>{{ selectedRecord.date }}</span>
+                <span>{{ userStore.isAdmin ? visibilityLabel(selectedRecord.visibility) : selectedRecord.date }}</span>
               </div>
               <h2>{{ selectedRecord.title }}</h2>
               <p class="detail-creator">{{ selectedRecord.creator }}</p>
@@ -587,7 +729,7 @@ watch([activeStatus, searchKeyword], () => {
                 <span>等待同步</span>
               </div>
               <h2>暂无记录</h2>
-              <p class="detail-note">当前没有可展示的公开读书记录。管理员配置 `WEREAD_API_KEY` 后，可点击同步按钮或等待定时任务刷新。</p>
+              <p class="detail-note">{{ emptyMessage }}</p>
             </div>
           </article>
 
@@ -892,7 +1034,7 @@ watch([activeStatus, searchKeyword], () => {
 
 .record-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -928,6 +1070,76 @@ watch([activeStatus, searchKeyword], () => {
   margin-left: 0.2rem;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.book-time-panel {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.5fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  box-shadow: 0 18px 50px rgba(26, 42, 38, 0.1);
+}
+
+.book-time-panel__copy h2 {
+  margin: 0.55rem 0 0.4rem;
+  color: var(--ink);
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.book-time-panel__copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.book-time-bars {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(2.4rem, 1fr));
+  gap: 0.55rem;
+  min-height: 10rem;
+  overflow-x: auto;
+}
+
+.book-time-bars__item {
+  display: grid;
+  grid-template-rows: 1.4rem 7rem 1.3rem;
+  gap: 0.35rem;
+  min-width: 2.4rem;
+  text-align: center;
+}
+
+.book-time-bars__item span,
+.book-time-bars__item small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-time-bars__item i {
+  display: block;
+  align-self: end;
+  width: 100%;
+  border-radius: 8px 8px 2px 2px;
+  background: linear-gradient(180deg, var(--warm), var(--accent));
+  box-shadow: inset 0 -16px 30px rgba(0, 0, 0, 0.12);
+}
+
+.book-time-empty {
+  display: grid;
+  place-items: center;
+  min-height: 10rem;
+  border: 1px dashed color-mix(in srgb, var(--muted) 32%, transparent);
+  border-radius: 8px;
+  color: var(--muted);
 }
 
 .record-content {
@@ -1376,6 +1588,7 @@ watch([activeStatus, searchKeyword], () => {
 
   .record-header,
   .record-content,
+  .book-time-panel,
   .detail-panel {
     grid-template-columns: 1fr;
   }
@@ -1426,6 +1639,14 @@ watch([activeStatus, searchKeyword], () => {
 
   .record-row__score {
     display: none;
+  }
+
+  .book-time-bars__item span {
+    display: none;
+  }
+
+  .book-time-bars__item {
+    grid-template-rows: 6rem 1.3rem;
   }
 }
 </style>
