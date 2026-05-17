@@ -1,4 +1,5 @@
 import request from './request'
+import { apiConfig } from '../config'
 export { generateArticleDraft } from './ai'
 export { generateArticleSummary } from './ai'
 export { getAIConfig, updateAIConfig } from './ai'
@@ -14,6 +15,11 @@ export const updateProfile = (data: any) => request.put('/auth/profile', data)
 export const forgotPassword = (data: any) => request.post('/auth/forgot-password', data)
 export const resetPassword = (data: any) => request.post('/auth/reset-password', data)
 export const sendRegisterCode = (data: any) => request.post('/auth/register/send-code', data)
+export const getGitHubAuthorizeUrl = (redirect = '/') => {
+  const base = apiConfig.baseURL.replace(/\/+$/, '')
+  const target = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+  return `${base}/auth/github/authorize?redirect=${encodeURIComponent(target)}`
+}
 
 // Articles
 export const getArticles = (params: any) => request.get('/articles', { params })
