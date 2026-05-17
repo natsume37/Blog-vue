@@ -64,6 +64,7 @@ export const getNewsNowRealtime = (params?: any) => request.get('/plugins/newsno
 // Records
 export const getBookRecords = (params?: any, silent = false) => request.get('/records/books', { params, silent } as any)
 export const getBookRecordStats = (silent = false) => request.get('/records/books/stats', { silent } as any)
+export const getBookReadingTimeStats = (silent = false) => request.get('/records/books/time-stats', { silent } as any)
 export const getBookRecordDetail = (id: number, silent = false) => request.get(`/records/books/${id}`, { silent } as any)
 export const getWeReadSyncStatus = (silent = false) => request.get('/records/weread/status', { silent } as any)
 export const syncWeReadRecords = () => request.post('/records/weread/sync')

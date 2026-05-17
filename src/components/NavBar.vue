@@ -140,7 +140,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar, Connection, DataBoard, Grid, Reading, Film } from '@element-plus/icons-vue'
+import { Search, ArrowDown, User, Setting, SwitchButton, HomeFilled, Menu, ChatLineSquare, Calendar, Connection, DataBoard, Grid, Reading, Film, DataAnalysis } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { NEWSNOW_PLUGIN_ID, usePublicPluginStore } from '../stores/publicPlugins'
 import { useUserStore } from '../stores/user'
@@ -198,6 +198,7 @@ const navLinks = computed<NavLink[]>(() => {
       icon: Reading,
       children: [
         { name: '读书记录', path: '/records/books', icon: Reading },
+        { name: '阅读时长', path: '/records/books/time', icon: DataAnalysis },
         { name: '电影记录', path: '/records/movies', icon: Film },
       ],
     },

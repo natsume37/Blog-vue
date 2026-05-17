@@ -337,6 +337,7 @@ const completionCount = computed(() => config.value.records.filter((item) => ite
 
 const routeLinks = [
   { label: '读书', to: '/records/books', icon: Reading },
+  { label: '时长', to: '/records/books/time', icon: DataAnalysis },
   { label: '电影', to: '/records/movies', icon: Film },
 ]
 
