@@ -46,6 +46,20 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/Tools.vue')
   },
   {
+    path: '/records',
+    redirect: '/records/books'
+  },
+  {
+    path: '/records/books',
+    name: 'BookRecords',
+    component: () => import('../views/BookRecords.vue')
+  },
+  {
+    path: '/records/movies',
+    name: 'MovieRecords',
+    component: () => import('../views/MovieRecords.vue')
+  },
+  {
     path: '/about',
     name: 'About',
     component: () => import('../views/About.vue')

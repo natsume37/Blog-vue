@@ -7,9 +7,9 @@ export { listMcpTools, callMcpTool } from './ai'
 
 // Auth
 export const login = (data: any) => request.post('/auth/login', data)
-export const logout = () => request.post('/auth/logout')
+export const logout = (silent = false) => request.post('/auth/logout', undefined, { silent } as any)
 export const register = (data: any) => request.post('/auth/register', data)
-export const getCurrentUser = () => request.get('/auth/me')
+export const getCurrentUser = (silent = false) => request.get('/auth/me', { silent } as any)
 export const updateProfile = (data: any) => request.put('/auth/profile', data)
 export const forgotPassword = (data: any) => request.post('/auth/forgot-password', data)
 export const resetPassword = (data: any) => request.post('/auth/reset-password', data)
@@ -55,11 +55,18 @@ export const createMessage = (data: any) => request.post('/messages', data)
 
 // Site
 export const getSiteInfo = () => request.get('/site/info')
-export const getSiteConfig = () => request.get('/site/config')
+export const getSiteConfig = (silent = false) => request.get('/site/config', { silent } as any)
 export const updateSiteConfig = (data: any) => request.put('/site/config', data)
 export const getCommentRiskConfig = () => request.get('/site/comment-risk-config')
 export const updateCommentRiskConfig = (data: any) => request.put('/site/comment-risk-config', data)
 export const getNewsNowRealtime = (params?: any) => request.get('/plugins/newsnow/realtime', { params })
+
+// Records
+export const getBookRecords = (params?: any, silent = false) => request.get('/records/books', { params, silent } as any)
+export const getBookRecordStats = (silent = false) => request.get('/records/books/stats', { silent } as any)
+export const getBookRecordDetail = (id: number, silent = false) => request.get(`/records/books/${id}`, { silent } as any)
+export const getWeReadSyncStatus = (silent = false) => request.get('/records/weread/status', { silent } as any)
+export const syncWeReadRecords = () => request.post('/records/weread/sync')
 
 // Changelog
 export const getChangelogs = () => request.get('/changelogs')
@@ -122,7 +129,7 @@ export const testMailConfig = (config: any, emailTo: string) =>
 // Plugins (Admin)
 export const getAdminPluginCatalog = () => request.get('/plugins')
 export const getAdminPluginMarket = () => request.get('/plugins/market')
-export const getPublicPlugins = () => request.get('/plugins/public')
+export const getPublicPlugins = (silent = false) => request.get('/plugins/public', { silent } as any)
 export const installAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/install`)
 export const enableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/enable`)
 export const disableAdminPlugin = (pluginId: string) => request.post(`/plugins/${pluginId}/disable`)

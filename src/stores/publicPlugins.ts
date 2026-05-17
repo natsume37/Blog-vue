@@ -12,7 +12,7 @@ export const usePublicPluginStore = defineStore('publicPlugins', () => {
   const fetchPublicPlugins = async () => {
     loading.value = true
     try {
-      const res: any = await getPublicPlugins()
+      const res: any = await getPublicPlugins(true)
       if (res?.code === 200) {
         enabledPluginIds.value = Array.isArray(res.data) ? res.data.map((item: any) => String(item).trim()).filter(Boolean) : []
         initialized.value = true

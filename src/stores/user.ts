@@ -38,14 +38,18 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('userInfo', JSON.stringify(info))
   }
 
+  const clearUserInfo = () => {
+    userInfo.value = null
+    localStorage.removeItem('userInfo')
+  }
+
   const logout = async () => {
     try {
       await api.logout()
     } catch (_error) {
       // Ignore backend logout failures and still clear local state.
     }
-    userInfo.value = null
-    localStorage.removeItem('userInfo')
+    clearUserInfo()
   }
 
   /**
@@ -55,18 +59,18 @@ export const useUserStore = defineStore('user', () => {
   const verifyToken = async (): Promise<boolean> => {
     isLoading.value = true
     try {
-      const res: any = await api.getCurrentUser()
+      const res: any = await api.getCurrentUser(true)
       if (res.code === 200 && res.data) {
         setUserInfo(res.data)
         return true
       } else {
         // Token 无效或过期
-        logout()
+        clearUserInfo()
         return false
       }
     } catch (error) {
       // 请求失败（401 等）
-      logout()
+      clearUserInfo()
       return false
     } finally {
       isLoading.value = false

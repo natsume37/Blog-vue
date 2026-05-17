@@ -14,6 +14,12 @@ service.interceptors.response.use(
     return response.data
   },
   (error) => {
+    const silent = Boolean((error.config as any)?.silent)
+
+    if (silent) {
+      return Promise.reject(error)
+    }
+
     if (error.response) {
       switch (error.response.status) {
         case 401:

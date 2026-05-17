@@ -25,12 +25,12 @@ export const useSiteStore = defineStore('site', () => {
 
   const fetchConfig = async () => {
     try {
-      const res: any = await getSiteConfig()
+      const res: any = await getSiteConfig(true)
       if (res.code === 200) {
         siteConfig.value = res.data
       }
     } catch (error) {
-      console.error('Failed to fetch site config', error)
+      console.warn('Failed to fetch site config, using local fallback', error)
     }
   }
 
