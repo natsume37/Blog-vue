@@ -660,8 +660,8 @@ watch([activeStatus, searchKeyword], () => {
                 <span class="cover-art" :style="{ '--cover': item.color, '--cover-accent': item.accent }">
                   <span></span>
                 </span>
-                  <span class="record-row__body">
-                    <span class="record-row__title">{{ item.title }}</span>
+                <span class="record-row__body">
+                  <span class="record-row__title">{{ item.title }}</span>
                   <span class="record-row__meta">
                     {{ item.creator }} · {{ item.format }}
                     <template v-if="userStore.isAdmin"> · {{ visibilityLabel(item.visibility) }}</template>
@@ -1146,7 +1146,7 @@ watch([activeStatus, searchKeyword], () => {
   display: grid;
   grid-template-columns: minmax(21rem, 0.9fr) minmax(28rem, 1.35fr) minmax(17rem, 0.65fr);
   gap: 1rem;
-  align-items: stretch;
+  align-items: start;
 }
 
 .record-panel,
@@ -1160,6 +1160,10 @@ watch([activeStatus, searchKeyword], () => {
 }
 
 .record-list-panel {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  max-height: min(74vh, 56rem);
   padding: 1rem;
 }
 
@@ -1207,6 +1211,19 @@ watch([activeStatus, searchKeyword], () => {
 .record-list {
   display: grid;
   gap: 0.7rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  scrollbar-gutter: stable;
+}
+
+.record-list::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+.record-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
 }
 
 .record-empty {
@@ -1325,7 +1342,8 @@ watch([activeStatus, searchKeyword], () => {
 .detail-panel {
   display: grid;
   grid-template-columns: minmax(12rem, 0.72fr) minmax(0, 1fr);
-  min-height: 38rem;
+  align-self: start;
+  min-height: clamp(34rem, 66vh, 42rem);
   background: var(--surface-strong);
 }
 
@@ -1376,6 +1394,7 @@ watch([activeStatus, searchKeyword], () => {
 .detail-copy {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   padding: clamp(1.25rem, 3vw, 2rem);
 }
 
@@ -1389,7 +1408,8 @@ watch([activeStatus, searchKeyword], () => {
 
 .detail-copy h2 {
   margin: 1.2rem 0 0.3rem;
-  font-size: clamp(2rem, 4vw, 3.25rem);
+  overflow-wrap: anywhere;
+  font-size: clamp(1.9rem, 3.4vw, 3.05rem);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -1461,6 +1481,7 @@ watch([activeStatus, searchKeyword], () => {
 
 .record-insights {
   display: grid;
+  align-self: start;
   gap: 1rem;
 }
 
@@ -1548,6 +1569,21 @@ watch([activeStatus, searchKeyword], () => {
   }
 }
 
+@media (min-width: 1181px) {
+  .detail-panel,
+  .record-insights {
+    position: sticky;
+    top: 5.5rem;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .detail-panel {
+    position: sticky;
+    top: 5.5rem;
+  }
+}
+
 @media (max-width: 900px) {
   .record-page {
     padding: 5.5rem 1rem 2rem;
@@ -1591,6 +1627,15 @@ watch([activeStatus, searchKeyword], () => {
   .book-time-panel,
   .detail-panel {
     grid-template-columns: 1fr;
+  }
+
+  .record-list-panel {
+    max-height: none;
+  }
+
+  .record-list {
+    overflow: visible;
+    padding-right: 0;
   }
 
   .record-actions {
