@@ -14,11 +14,12 @@
       <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-gray-50/90"></div>
       <div class="hero-glow hero-glow-a"></div>
       <div class="hero-glow hero-glow-b"></div>
-      <!-- Wave Effect at bottom -->
-      <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
-        <svg class="relative block w-[calc(100%+1.3px)] h-[60px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="fill-gray-50/50"></path>
-        </svg>
+      <!-- Cloud transition at bottom -->
+      <div class="hero-cloud-transition" aria-hidden="true">
+        <div class="hero-cloud-layer hero-cloud-layer-a"></div>
+        <div class="hero-cloud-layer hero-cloud-layer-b"></div>
+        <div class="hero-cloud-layer hero-cloud-layer-c"></div>
+        <div class="hero-cloud-mist"></div>
       </div>
       
       <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
@@ -401,6 +402,22 @@ onMounted(() => {
   }
 }
 
+@keyframes cloud-drift {
+  from { transform: translate3d(-4%, 0, 0); }
+  to { transform: translate3d(4%, 0, 0); }
+}
+
+@keyframes cloud-breathe {
+  0%, 100% {
+    opacity: 0.78;
+    transform: translate3d(0, 2px, 0) scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate3d(0, -7px, 0) scale(1.025);
+  }
+}
+
 @keyframes shine-sweep {
   from { transform: translateX(-130%) skewX(-18deg); }
   to { transform: translateX(240%) skewX(-18deg); }
@@ -415,6 +432,10 @@ onMounted(() => {
   background-image:
     radial-gradient(circle at 14% 18%, rgba(135, 206, 235, 0.16), transparent 35%),
     radial-gradient(circle at 82% 24%, rgba(144, 238, 144, 0.12), transparent 32%);
+}
+
+.hero-shell {
+  isolation: isolate;
 }
 
 .hero-shell::after {
@@ -463,6 +484,112 @@ onMounted(() => {
   right: 14%;
   background: rgba(135, 206, 235, 0.26);
   animation: hero-float 7.4s 0.5s ease-in-out infinite;
+}
+
+.hero-cloud-transition {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -34px;
+  height: 150px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+  background:
+    linear-gradient(to bottom, rgba(240, 249, 255, 0) 0%, rgba(240, 249, 255, 0.48) 48%, rgba(249, 250, 251, 0.96) 100%),
+    radial-gradient(80% 95% at 50% 100%, rgba(255, 255, 255, 0.95), rgba(240, 249, 255, 0.38) 54%, transparent 78%);
+}
+
+.hero-cloud-transition::before,
+.hero-cloud-transition::after,
+.hero-cloud-layer,
+.hero-cloud-mist {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.hero-cloud-transition::before {
+  bottom: 26px;
+  height: 82px;
+  opacity: 0.76;
+  background:
+    radial-gradient(110px 42px at 7% 58%, rgba(255, 255, 255, 0.7), transparent 68%),
+    radial-gradient(150px 58px at 19% 46%, rgba(231, 246, 255, 0.72), transparent 70%),
+    radial-gradient(190px 70px at 36% 62%, rgba(255, 255, 255, 0.8), transparent 72%),
+    radial-gradient(140px 52px at 54% 42%, rgba(222, 243, 255, 0.62), transparent 70%),
+    radial-gradient(210px 74px at 77% 60%, rgba(255, 255, 255, 0.86), transparent 74%),
+    radial-gradient(145px 54px at 94% 48%, rgba(230, 246, 255, 0.68), transparent 72%);
+  filter: blur(7px);
+  animation: cloud-drift 19s ease-in-out infinite alternate;
+}
+
+.hero-cloud-transition::after {
+  bottom: 0;
+  height: 86px;
+  opacity: 0.9;
+  background:
+    radial-gradient(180px 64px at 2% 78%, rgba(249, 250, 251, 0.98), transparent 72%),
+    radial-gradient(220px 78px at 18% 72%, rgba(255, 255, 255, 0.98), transparent 74%),
+    radial-gradient(250px 86px at 42% 78%, rgba(245, 250, 255, 0.98), transparent 76%),
+    radial-gradient(220px 74px at 66% 70%, rgba(255, 255, 255, 0.96), transparent 74%),
+    radial-gradient(260px 92px at 91% 76%, rgba(249, 250, 251, 0.98), transparent 76%);
+  filter: blur(9px);
+  animation: cloud-drift 23s ease-in-out infinite alternate-reverse;
+}
+
+.hero-cloud-layer {
+  bottom: 18px;
+  height: 100px;
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 28%, black 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 28%, black 78%, transparent 100%);
+}
+
+.hero-cloud-layer-a {
+  opacity: 0.54;
+  background:
+    radial-gradient(150px 56px at 14% 36%, rgba(180, 220, 235, 0.45), transparent 72%),
+    radial-gradient(210px 72px at 46% 48%, rgba(255, 255, 255, 0.46), transparent 74%),
+    radial-gradient(170px 62px at 82% 38%, rgba(187, 224, 238, 0.4), transparent 72%);
+  filter: blur(15px);
+  animation: cloud-drift 31s ease-in-out infinite alternate;
+}
+
+.hero-cloud-layer-b {
+  bottom: 38px;
+  opacity: 0.42;
+  background:
+    radial-gradient(190px 64px at 5% 68%, rgba(255, 255, 255, 0.48), transparent 72%),
+    radial-gradient(260px 78px at 30% 54%, rgba(199, 232, 244, 0.38), transparent 74%),
+    radial-gradient(220px 80px at 61% 64%, rgba(255, 255, 255, 0.5), transparent 74%),
+    radial-gradient(210px 68px at 96% 52%, rgba(207, 236, 248, 0.44), transparent 72%);
+  filter: blur(19px);
+  animation: cloud-drift 37s ease-in-out infinite alternate-reverse;
+}
+
+.hero-cloud-layer-c {
+  bottom: -10px;
+  opacity: 0.36;
+  background:
+    linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.72) 58%, rgba(249, 250, 251, 0.98)),
+    radial-gradient(70% 66% at 50% 76%, rgba(223, 244, 255, 0.52), transparent 70%);
+  filter: blur(14px);
+  animation: cloud-breathe 9s ease-in-out infinite;
+}
+
+.hero-cloud-mist {
+  inset: auto -8% 0;
+  height: 115px;
+  opacity: 0.5;
+  background:
+    repeating-linear-gradient(100deg, rgba(255, 255, 255, 0.06) 0 12px, rgba(197, 225, 238, 0.06) 12px 24px),
+    linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.55) 65%, rgba(249, 250, 251, 0.92));
+  filter: blur(6px);
+  animation: cloud-drift 44s linear infinite alternate;
 }
 
 .panel-card {
@@ -551,6 +678,10 @@ section:hover .section-title::after {
   .hero-typing,
   .hero-glow-a,
   .hero-glow-b,
+  .hero-cloud-transition::before,
+  .hero-cloud-transition::after,
+  .hero-cloud-layer,
+  .hero-cloud-mist,
   .btn-shine:hover::after {
     animation: none;
   }
