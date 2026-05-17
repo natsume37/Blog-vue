@@ -109,22 +109,92 @@ jobs:
           fi
 
           export SSHPASS="$DEPLOY_PASSWORD"
+          tar -C dist -czf frontend-dist.tgz .
+          SSH_OPTS=(
+            -o StrictHostKeyChecking=no
+            -o UserKnownHostsFile=/dev/null
+            -o ConnectTimeout="${{ env.DEPLOY_SSH_CONNECT_TIMEOUT }}"
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=3
+          )
 
           for attempt in 1 2 3; do
             echo "Deploy attempt $attempt/3"
+            RELEASE_ID="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}-${GITHUB_SHA::12}"
+            REMOTE_ARCHIVE="/tmp/blog-frontend-${RELEASE_ID}.tgz"
+            REMOTE_ENV="DEPLOY_PATH=$(printf '%q' "$DEPLOY_PATH") ARCHIVE=$(printf '%q' "$REMOTE_ARCHIVE") RELEASE_ID=$(printf '%q' "$RELEASE_ID")"
 
-            if tar -C dist -czf - . | sshpass -e ssh \
-              -p "$DEPLOY_PORT" \
-              -o StrictHostKeyChecking=no \
-              -o UserKnownHostsFile=/dev/null \
-              -o ConnectTimeout="${{ env.DEPLOY_SSH_CONNECT_TIMEOUT }}" \
-              -o ServerAliveInterval=15 \
-              -o ServerAliveCountMax=3 \
-              "$DEPLOY_USER@$DEPLOY_HOST" \
-              "set -euo pipefail; mkdir -p '$DEPLOY_PATH'; rm -rf '$DEPLOY_PATH'/*; tar -xzf - -C '$DEPLOY_PATH'; sudo nginx -t; sudo systemctl reload nginx"; then
+            if sshpass -e scp -P "$DEPLOY_PORT" "${SSH_OPTS[@]}" frontend-dist.tgz "$DEPLOY_USER@$DEPLOY_HOST:$REMOTE_ARCHIVE" \
+              && sshpass -e ssh -p "$DEPLOY_PORT" "${SSH_OPTS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "$REMOTE_ENV bash -s" <<'REMOTE_SCRIPT'
+          set -Eeuo pipefail
+
+          deploy_path="${DEPLOY_PATH%/}"
+          if [ -z "$deploy_path" ] || [ "$deploy_path" = "/" ]; then
+            echo "Invalid DEPLOY_PATH: ${DEPLOY_PATH:-empty}" >&2
+            exit 1
+          fi
+          archive="${ARCHIVE:?}"
+          release_id="${RELEASE_ID:?}"
+          release_root="${deploy_path}.releases"
+          backup_root="${deploy_path}.backups"
+          staging="${release_root}/${release_id}"
+          backup="${backup_root}/${release_id}"
+          backup_file="${backup}/site.tgz"
+          owner_group=""
+          restore_needed=0
+
+          rollback() {
+            local code=$?
+            if [ "$restore_needed" -eq 1 ] && [ -f "$backup_file" ]; then
+              echo "Deploy failed, rolling back to ${backup_file}"
+              rm -rf "$deploy_path"
+              mkdir -p "$deploy_path"
+              tar -xzf "$backup_file" -C "$deploy_path"
+              if [ -n "$owner_group" ]; then
+                sudo chown -R "$owner_group" "$deploy_path" || true
+              fi
+              sudo nginx -t && sudo systemctl reload nginx || true
+            else
+              echo "Deploy failed before current release was changed; no rollback needed."
+            fi
+            rm -rf "$staging"
+            rm -f "$archive"
+            exit "$code"
+          }
+          trap rollback EXIT
+
+          mkdir -p "$deploy_path" "$release_root" "$backup_root" "$staging" "$backup"
+          owner_group="$(stat -c '%U:%G' "$deploy_path" 2>/dev/null || true)"
+
+          tar -xzf "$archive" -C "$staging"
+
+          if find "$deploy_path" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+            tar -C "$deploy_path" -czf "$backup_file" .
+          fi
+
+          restore_needed=1
+          find "$deploy_path" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          cp -a "$staging"/. "$deploy_path"/
+          if [ -n "$owner_group" ]; then
+            sudo chown -R "$owner_group" "$deploy_path" || true
+          fi
+
+          sudo nginx -t
+          sudo systemctl reload nginx
+
+          rm -rf "$staging"
+          rm -f "$archive"
+          find "$release_root" -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} + || true
+          find "$backup_root" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} + || true
+          trap - EXIT
+          echo "Frontend deploy completed. Backup: ${backup_file}"
+          REMOTE_SCRIPT
+            then
               echo "Frontend deploy completed."
               exit 0
             fi
+
+            sshpass -e ssh -p "$DEPLOY_PORT" "${SSH_OPTS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "rm -f '$REMOTE_ARCHIVE'" || true
 
             if [ "$attempt" -eq 3 ]; then
               echo "Frontend deploy failed after 3 attempts."
