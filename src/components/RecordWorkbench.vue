@@ -51,6 +51,7 @@ type RecordItem = {
   accent: string
   cover?: string
   visibility?: string
+  readSeconds?: number
 }
 
 type BookStats = {
@@ -63,15 +64,39 @@ type BookStats = {
 }
 
 type BookTimeStats = {
+  total_read_seconds: number
   total_read_duration: string
+  day_average_seconds: number
   day_average_duration: string
   read_days: number
   active_days: number
+  compare?: number
+  book_count: number
+  note_count: number
+  read_distribution_word?: string
   daily: Array<{
     timestamp: number
+    date?: string
     label: string
     read_seconds: number
     read_duration: string
+  }>
+  categories?: Array<{
+    name: string
+    parent_name?: string
+    reading_count?: number
+    read_seconds: number
+    read_duration: string
+    percent: number
+  }>
+  longest_books?: Array<{
+    source_id?: string
+    title: string
+    author?: string
+    cover?: string
+    read_seconds: number
+    read_duration: string
+    tags?: string[]
   }>
 }
 
@@ -112,6 +137,7 @@ const movieApiLoaded = ref(false)
 const movieApiRecords = ref<RecordItem[]>([])
 const syncLoading = ref(false)
 const syncStatus = ref<SyncStatus | null>(null)
+const activeTimeRange = ref<'week' | 'month' | 'all'>('month')
 
 const bookRecords: RecordItem[] = [
   {
@@ -281,8 +307,8 @@ const formatSyncTime = (value?: string | null) => {
 
 const visibilityLabel = (value?: string) => {
   if (value === 'login') return '登录可见'
-  if (value === 'private') return '仅管理员'
-  return '公开'
+  if (value === 'public') return '公开'
+  return '仅管理员'
 }
 
 const transformBookRecord = (item: any): RecordItem => ({
@@ -301,7 +327,8 @@ const transformBookRecord = (item: any): RecordItem => ({
   color: String(item.color || '#2f6c8f'),
   accent: String(item.accent || '#224c4a'),
   cover: String(item.cover || ''),
-  visibility: String(item.visibility || 'public'),
+  visibility: String(item.visibility || 'private'),
+  readSeconds: Number(item.read_seconds || 0),
 })
 
 const transformMovieRecord = (item: any): RecordItem => ({
@@ -320,7 +347,7 @@ const transformMovieRecord = (item: any): RecordItem => ({
   color: String(item.color || '#2f5d7c'),
   accent: String(item.accent || '#d6a35d'),
   cover: String(item.cover || ''),
-  visibility: String(item.visibility || 'public'),
+  visibility: String(item.visibility || 'private'),
 })
 
 const config = computed(() => {
@@ -407,11 +434,139 @@ const emptyMessage = computed(() => (
     ? '暂无可见读书记录。管理员可以在后台调整图书可见范围，或稍后等待微信读书同步。'
     : '暂无可见电影记录。管理员可以在后台调整电影可见范围。'
 ))
-const bookTimePeakSeconds = computed(() => Math.max(1, ...(bookTimeStats.value?.daily || []).map((item) => item.read_seconds)))
-const bookTimeChartPoints = computed(() => (bookTimeStats.value?.daily || []).slice(-10).map((item) => ({
+
+const timeRangeOptions = [
+  { label: '近7天', value: 'week' as const },
+  { label: '近30天', value: 'month' as const },
+  { label: '全部', value: 'all' as const },
+]
+
+const secondsToShortDuration = (seconds?: number) => {
+  const total = Math.max(0, Math.round(seconds || 0))
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.round((total % 3600) / 60)
+  if (hours > 0 && minutes > 0) return `${hours}小时${minutes}分钟`
+  if (hours > 0) return `${hours}小时`
+  return `${minutes}分钟`
+}
+
+const bookTimeDaily = computed(() => {
+  const daily = [...(bookTimeStats.value?.daily || [])].sort((a, b) => a.timestamp - b.timestamp)
+  if (activeTimeRange.value === 'all' || daily.length === 0) return daily
+  const newestItem = daily[daily.length - 1]
+  const newest = newestItem ? newestItem.timestamp : 0
+  const days = activeTimeRange.value === 'week' ? 7 : 30
+  const start = newest - (days - 1) * 86400
+  return daily.filter((item) => item.timestamp >= start)
+})
+
+const bookTimePeakSeconds = computed(() => Math.max(1, ...bookTimeDaily.value.map((item) => item.read_seconds)))
+const bookTimeChartPoints = computed(() => bookTimeDaily.value.map((item, index) => ({
   ...item,
-  height: item.read_seconds <= 0 ? 3 : Math.max(12, Math.round((item.read_seconds / bookTimePeakSeconds.value) * 100)),
+  index,
+  height: item.read_seconds <= 0 ? 4 : Math.max(10, Math.round((item.read_seconds / bookTimePeakSeconds.value) * 100)),
 })))
+
+const bookTimeTotalSeconds = computed(() => {
+  if (activeTimeRange.value === 'all') {
+    return bookTimeStats.value?.total_read_seconds || 0
+  }
+  return bookTimeDaily.value.reduce((sum, item) => sum + Number(item.read_seconds || 0), 0)
+})
+
+const bookTimeActiveDays = computed(() => bookTimeDaily.value.filter((item) => item.read_seconds > 0).length)
+const bookTimeAverageSeconds = computed(() => {
+  if (activeTimeRange.value === 'all') return bookTimeStats.value?.day_average_seconds || 0
+  return bookTimeActiveDays.value ? Math.round(bookTimeTotalSeconds.value / bookTimeActiveDays.value) : 0
+})
+
+const bookTimeSummaryCards = computed(() => [
+  { label: '累计阅读', value: secondsToShortDuration(bookTimeTotalSeconds.value), meta: activeTimeRange.value === 'all' ? '全部同步数据' : '当前时间范围' },
+  { label: '活跃天数', value: String(activeTimeRange.value === 'all' ? bookTimeStats.value?.active_days || 0 : bookTimeActiveDays.value), meta: '有阅读记录的天数' },
+  { label: '日均阅读', value: secondsToShortDuration(bookTimeAverageSeconds.value), meta: bookTimeStats.value?.read_distribution_word || '阅读节奏' },
+  { label: '书籍 / 笔记', value: `${bookTimeStats.value?.book_count || activeBookRecords.value.length} / ${bookTimeStats.value?.note_count || bookStats.value?.note_count || 0}`, meta: '本 / 条' },
+])
+
+const bookYearCards = computed(() => {
+  const grouped = new Map<number, { year: number; seconds: number; days: number; peak: number }>()
+  ;(bookTimeStats.value?.daily || []).forEach((item) => {
+    const date = new Date((item.timestamp || 0) * 1000)
+    const year = Number.isNaN(date.getTime()) ? new Date().getFullYear() : date.getFullYear()
+    const current = grouped.get(year) || { year, seconds: 0, days: 0, peak: 0 }
+    current.seconds += Number(item.read_seconds || 0)
+    if (item.read_seconds > 0) current.days += 1
+    current.peak = Math.max(current.peak, Number(item.read_seconds || 0))
+    grouped.set(year, current)
+  })
+  return Array.from(grouped.values())
+    .sort((a, b) => b.year - a.year)
+    .slice(0, 3)
+    .map((item) => ({
+      ...item,
+      duration: secondsToShortDuration(item.seconds),
+      peakPercent: Math.max(8, Math.round((item.peak / Math.max(1, item.seconds)) * 100)),
+    }))
+})
+
+const recentReadingBooks = computed(() => activeBookRecords.value.slice(0, 6))
+
+const longestReadingBooks = computed(() => {
+  const fromStats = (bookTimeStats.value?.longest_books || [])
+    .filter((item) => item.read_seconds > 0)
+    .map((item) => ({
+      title: item.title,
+      creator: item.author || '',
+      cover: item.cover || '',
+      color: '#2f6c8f',
+      accent: '#c76d3d',
+      readSeconds: item.read_seconds,
+      duration: item.read_duration,
+    }))
+  if (fromStats.length) return fromStats.slice(0, 8)
+  return activeBookRecords.value
+    .filter((item) => (item.readSeconds || 0) > 0)
+    .sort((a, b) => (b.readSeconds || 0) - (a.readSeconds || 0))
+    .slice(0, 8)
+    .map((item) => ({
+      title: item.title,
+      creator: item.creator,
+      cover: item.cover || '',
+      color: item.color,
+      accent: item.accent,
+      readSeconds: item.readSeconds || 0,
+      duration: item.duration,
+    }))
+})
+
+const categoryPreference = computed(() => {
+  const fromStats = (bookTimeStats.value?.categories || [])
+    .filter((item) => item.name)
+    .slice(0, 6)
+    .map((item) => ({
+      name: item.name,
+      value: item.read_duration || secondsToShortDuration(item.read_seconds),
+      percent: Math.max(4, Math.min(100, item.percent || 0)),
+    }))
+  if (fromStats.length) return fromStats
+
+  const tagCount = new Map<string, number>()
+  activeBookRecords.value.forEach((record) => {
+    record.tags.slice(0, 2).forEach((tag) => {
+      if (tag && tag !== '微信读书') tagCount.set(tag, (tagCount.get(tag) || 0) + 1)
+    })
+  })
+  const max = Math.max(1, ...Array.from(tagCount.values()))
+  return Array.from(tagCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([name, count]) => ({
+      name,
+      value: `${count}本`,
+      percent: Math.max(8, Math.round((count / max) * 100)),
+    }))
+})
+
+const timeRangeLabel = computed(() => timeRangeOptions.find((item) => item.value === activeTimeRange.value)?.label || '近30天')
 
 const routeLinks = [
   { label: '读书', to: '/records/books', icon: Reading },
@@ -600,28 +755,117 @@ watch([activeStatus, searchKeyword], () => {
           </div>
         </section>
 
-        <section v-if="props.kind === 'books'" class="book-time-panel" aria-label="阅读时长统计">
-          <div class="book-time-panel__copy">
-            <span class="record-eyebrow">
-              <el-icon><DataAnalysis /></el-icon>
-              Reading Time
-            </span>
-            <h2>阅读时长统计</h2>
-            <p>
-              累计 {{ bookTimeStats?.total_read_duration || bookStats?.read_duration || '0分钟' }}，
-              日均 {{ bookTimeStats?.day_average_duration || '0分钟' }}，
-              活跃 {{ bookTimeStats?.active_days || 0 }} 天。
-            </p>
-          </div>
-          <div v-if="bookTimeChartPoints.length" class="book-time-bars">
-            <div v-for="point in bookTimeChartPoints" :key="point.timestamp" class="book-time-bars__item">
-              <span>{{ point.read_duration }}</span>
-              <i :style="{ height: `${point.height}%` }"></i>
-              <small>{{ point.label }}</small>
+        <section v-if="props.kind === 'books'" class="book-time-dashboard" aria-label="阅读时长统计">
+          <div class="time-dashboard-head">
+            <div>
+              <span class="record-eyebrow">
+                <el-icon><DataAnalysis /></el-icon>
+                WeRead Time
+              </span>
+              <h2>我的阅读</h2>
+              <p>
+                {{ timeRangeLabel }}累计 {{ secondsToShortDuration(bookTimeTotalSeconds) }}，
+                日均 {{ secondsToShortDuration(bookTimeAverageSeconds) }}，
+                活跃 {{ activeTimeRange === 'all' ? bookTimeStats?.active_days || 0 : bookTimeActiveDays }} 天。
+              </p>
+            </div>
+            <div class="time-range-tabs" aria-label="阅读时间范围">
+              <button
+                v-for="item in timeRangeOptions"
+                :key="item.value"
+                type="button"
+                :class="{ 'is-active': activeTimeRange === item.value }"
+                @click="activeTimeRange = item.value"
+              >
+                {{ item.label }}
+              </button>
             </div>
           </div>
-          <div v-else class="book-time-empty">
-            暂无阅读时长数据
+
+          <div class="time-summary-grid">
+            <article v-for="card in bookTimeSummaryCards" :key="card.label" class="time-summary-card">
+              <span>{{ card.label }}</span>
+              <strong>{{ card.value }}</strong>
+              <small>{{ card.meta }}</small>
+            </article>
+          </div>
+
+          <div v-if="bookYearCards.length" class="time-year-strip">
+            <article v-for="year in bookYearCards" :key="year.year" class="time-year-card">
+              <span>{{ year.year }}</span>
+              <strong>{{ year.duration }}</strong>
+              <small>{{ year.days }} 天阅读</small>
+              <i :style="{ width: `${year.peakPercent}%` }"></i>
+            </article>
+          </div>
+
+          <div class="time-dashboard-grid">
+            <article class="time-card time-card--wide">
+              <div class="time-card__head">
+                <h3>阅读时长变化</h3>
+                <span>{{ timeRangeLabel }}</span>
+              </div>
+              <div v-if="bookTimeChartPoints.length" class="time-bar-chart">
+                <div v-for="point in bookTimeChartPoints" :key="point.timestamp" class="time-bar-chart__item">
+                  <span>{{ point.read_duration }}</span>
+                  <i :style="{ height: `${point.height}%` }"></i>
+                  <small>{{ point.label }}</small>
+                </div>
+              </div>
+              <div v-else class="book-time-empty">暂无阅读时长数据</div>
+            </article>
+
+            <article class="time-card">
+              <div class="time-card__head">
+                <h3>最近阅读</h3>
+                <span>{{ recentReadingBooks.length }} 本</span>
+              </div>
+              <div class="recent-book-grid">
+                <div v-for="book in recentReadingBooks" :key="book.id ?? book.title" class="recent-book">
+                  <img v-if="book.cover" :src="book.cover" :alt="book.title" loading="lazy">
+                  <span v-else class="mini-cover" :style="{ '--cover': book.color, '--cover-accent': book.accent }"></span>
+                  <strong>{{ book.title }}</strong>
+                  <small>{{ book.duration }}</small>
+                </div>
+              </div>
+            </article>
+
+            <article class="time-card time-card--wide">
+              <div class="time-card__head">
+                <h3>阅读最长</h3>
+                <span>{{ longestReadingBooks.length }} 本</span>
+              </div>
+              <div v-if="longestReadingBooks.length" class="longest-book-list">
+                <div v-for="book in longestReadingBooks" :key="book.title" class="longest-book">
+                  <img v-if="book.cover" :src="book.cover" :alt="book.title" loading="lazy">
+                  <span v-else class="mini-cover" :style="{ '--cover': book.color, '--cover-accent': book.accent }"></span>
+                  <div>
+                    <strong>{{ book.title }}</strong>
+                    <small>{{ book.creator || '微信读书' }}</small>
+                    <i :style="{ width: `${Math.max(8, Math.round((book.readSeconds / Math.max(1, longestReadingBooks[0]?.readSeconds || 1)) * 100))}%` }"></i>
+                  </div>
+                  <em>{{ book.duration }}</em>
+                </div>
+              </div>
+              <div v-else class="book-time-empty">暂无单本阅读时长</div>
+            </article>
+
+            <article class="time-card">
+              <div class="time-card__head">
+                <h3>偏好分类</h3>
+                <span>{{ categoryPreference.length }} 类</span>
+              </div>
+              <div v-if="categoryPreference.length" class="category-bars">
+                <div v-for="item in categoryPreference" :key="item.name" class="category-bar">
+                  <div>
+                    <strong>{{ item.name }}</strong>
+                    <span>{{ item.value }}</span>
+                  </div>
+                  <i><b :style="{ width: `${item.percent}%` }"></b></i>
+                </div>
+              </div>
+              <div v-else class="book-time-empty">暂无分类偏好</div>
+            </article>
           </div>
         </section>
 
@@ -1072,65 +1316,353 @@ watch([activeStatus, searchKeyword], () => {
   font-size: 0.82rem;
 }
 
-.book-time-panel {
+.book-time-dashboard {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.5fr) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: stretch;
+  gap: 0.85rem;
   margin-bottom: 1rem;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(143, 190, 180, 0.32);
   border-radius: 8px;
   padding: 1rem;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(247, 253, 251, 0.88)),
+    linear-gradient(135deg, rgba(115, 203, 218, 0.08), rgba(255, 183, 104, 0.1));
   box-shadow: 0 18px 50px rgba(26, 42, 38, 0.1);
 }
 
-.book-time-panel__copy h2 {
-  margin: 0.55rem 0 0.4rem;
-  color: var(--ink);
-  font-size: 1.45rem;
-  line-height: 1.15;
+.time-dashboard-head,
+.time-card__head,
+.time-summary-card,
+.time-year-card,
+.category-bar div,
+.longest-book,
+.recent-book {
+  display: flex;
+  align-items: center;
 }
 
-.book-time-panel__copy p {
+.time-dashboard-head {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.time-dashboard-head h2 {
+  margin: 0.35rem 0 0.35rem;
+  color: var(--ink);
+  font-size: clamp(1.55rem, 3vw, 2.2rem);
+  line-height: 1.05;
+}
+
+.time-dashboard-head p {
   margin: 0;
   color: var(--muted);
   line-height: 1.7;
 }
 
-.book-time-bars {
+.time-range-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.3rem;
+  border: 1px solid rgba(31, 106, 101, 0.12);
+  border-radius: 999px;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.time-range-tabs button {
+  min-width: 4.1rem;
+  height: 2.15rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 0.8rem;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.time-range-tabs button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #21a7c9, #247c74);
+  box-shadow: 0 10px 22px rgba(33, 167, 201, 0.22);
+}
+
+.time-summary-grid {
   display: grid;
-  grid-template-columns: repeat(10, minmax(2.4rem, 1fr));
-  gap: 0.55rem;
-  min-height: 10rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.time-summary-card,
+.time-year-card,
+.time-card {
+  border: 1px solid rgba(143, 190, 180, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(22, 61, 64, 0.07);
+}
+
+.time-summary-card {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 5.8rem;
+  padding: 0.85rem;
+}
+
+.time-summary-card span,
+.time-summary-card small,
+.time-year-card span,
+.time-year-card small,
+.time-card__head span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.time-summary-card strong {
+  color: #0f3432;
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  line-height: 1.1;
+}
+
+.time-year-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.time-year-card {
+  position: relative;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.22rem;
+  min-height: 6rem;
+  padding: 0.9rem;
+  overflow: hidden;
+}
+
+.time-year-card strong {
+  color: var(--accent-strong);
+  font-size: 1.2rem;
+}
+
+.time-year-card i {
+  position: absolute;
+  right: 0.9rem;
+  bottom: 0.8rem;
+  height: 2.4rem;
+  max-width: calc(100% - 1.8rem);
+  border-radius: 999px 999px 8px 8px;
+  background: linear-gradient(180deg, #2fc5ef, #8ad9ee);
+  opacity: 0.72;
+}
+
+.time-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(18rem, 0.88fr);
+  gap: 0.85rem;
+}
+
+.time-card {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.time-card--wide {
+  grid-column: span 1;
+}
+
+.time-card__head {
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.time-card__head h3 {
+  margin: 0;
+  color: #102c2b;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.time-bar-chart {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(1.35rem, 1fr));
+  gap: 0.35rem;
+  min-height: 15rem;
   overflow-x: auto;
 }
 
-.book-time-bars__item {
+.time-bar-chart__item {
   display: grid;
-  grid-template-rows: 1.4rem 7rem 1.3rem;
-  gap: 0.35rem;
-  min-width: 2.4rem;
+  grid-template-rows: 1.35rem 11.5rem 1.25rem;
+  gap: 0.28rem;
+  min-width: 1.35rem;
   text-align: center;
 }
 
-.book-time-bars__item span,
-.book-time-bars__item small {
+.time-bar-chart__item span,
+.time-bar-chart__item small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.book-time-bars__item i {
+.time-bar-chart__item i {
   display: block;
   align-self: end;
   width: 100%;
-  border-radius: 8px 8px 2px 2px;
-  background: linear-gradient(180deg, var(--warm), var(--accent));
-  box-shadow: inset 0 -16px 30px rgba(0, 0, 0, 0.12);
+  border-radius: 999px 999px 5px 5px;
+  background: linear-gradient(180deg, #29c0f0 0%, #62d1ee 48%, #b9ebf4 100%);
+  box-shadow: inset 0 -14px 24px rgba(15, 108, 140, 0.12);
+}
+
+.recent-book-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.recent-book {
+  align-items: stretch;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.recent-book img,
+.recent-book .mini-cover {
+  width: 100%;
+  aspect-ratio: 0.72;
+  border-radius: 7px;
+  object-fit: cover;
+  box-shadow: 0 12px 20px rgba(15, 44, 42, 0.14);
+}
+
+.mini-cover {
+  display: block;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.18), transparent 22%),
+    linear-gradient(135deg, var(--cover), var(--cover-accent));
+}
+
+.recent-book strong {
+  overflow: hidden;
+  margin-top: 0.55rem;
+  color: var(--ink);
+  font-size: 0.76rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-book small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.longest-book-list,
+.category-bars {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.longest-book {
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.longest-book img,
+.longest-book .mini-cover {
+  flex: 0 0 auto;
+  width: 3.05rem;
+  height: 4.1rem;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.longest-book div {
+  display: grid;
+  flex: 1;
+  gap: 0.26rem;
+  min-width: 0;
+}
+
+.longest-book strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.longest-book small,
+.longest-book em {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.longest-book i,
+.category-bar i {
+  display: block;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: rgba(95, 202, 221, 0.16);
+  overflow: hidden;
+}
+
+.longest-book i {
+  background: linear-gradient(90deg, #bceff6, #f4fbfd);
+}
+
+.longest-book i,
+.category-bar b {
+  max-width: 100%;
+}
+
+.longest-book i::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1ab8e7, #9ae6f3);
+}
+
+.category-bar {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.category-bar div {
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.category-bar strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-bar span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.category-bar b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffb15e, #e879b7, #7d7cf0);
 }
 
 .book-time-empty {
@@ -1624,9 +2156,31 @@ watch([activeStatus, searchKeyword], () => {
 
   .record-header,
   .record-content,
-  .book-time-panel,
+  .book-time-dashboard,
+  .time-dashboard-head,
+  .time-dashboard-grid,
   .detail-panel {
     grid-template-columns: 1fr;
+  }
+
+  .time-dashboard-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .time-range-tabs,
+  .time-summary-grid,
+  .time-year-strip {
+    overflow-x: auto;
+  }
+
+  .time-summary-grid,
+  .time-year-strip {
+    grid-template-columns: repeat(4, minmax(10.5rem, 1fr));
+  }
+
+  .time-year-strip {
+    grid-template-columns: repeat(3, minmax(10.5rem, 1fr));
   }
 
   .record-list-panel {
@@ -1686,12 +2240,16 @@ watch([activeStatus, searchKeyword], () => {
     display: none;
   }
 
-  .book-time-bars__item span {
+  .time-bar-chart__item span {
     display: none;
   }
 
-  .book-time-bars__item {
+  .time-bar-chart__item {
     grid-template-rows: 6rem 1.3rem;
+  }
+
+  .recent-book-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

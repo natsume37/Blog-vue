@@ -81,7 +81,7 @@
         <el-table-column label="谁可见" width="220" fixed="right">
           <template #default="{ row }">
             <el-select
-              :model-value="row.visibility || 'public'"
+              :model-value="row.visibility || 'private'"
               :disabled="row.updating"
               size="large"
               class="w-full"
@@ -173,19 +173,19 @@ const summaryCards = computed(() => [
   { key: 'private', label: '仅管理员', value: countByVisibility('private'), icon: Lock },
 ])
 
-const countByVisibility = (value: string) => activeRows.value.filter((row) => (row.visibility || 'public') === value).length
+const countByVisibility = (value: string) => activeRows.value.filter((row) => (row.visibility || 'private') === value).length
 const normalizedTags = (tags?: string[]) => (Array.isArray(tags) && tags.length ? tags.slice(0, 4) : ['未标记'])
 
 const visibilityLabel = (value?: string) => {
   if (value === 'login') return '登录用户可见'
-  if (value === 'private') return '仅管理员可见'
-  return '公开'
+  if (value === 'public') return '公开'
+  return '仅管理员可见'
 }
 
 const visibilityType = (value?: string) => {
   if (value === 'login') return 'warning'
-  if (value === 'private') return 'danger'
-  return 'success'
+  if (value === 'public') return 'success'
+  return 'danger'
 }
 
 const loadRecords = async () => {
@@ -212,7 +212,7 @@ const loadRecords = async () => {
 }
 
 const handleVisibilityChange = async (row: ManagedRecord, value: string) => {
-  const previous = row.visibility || 'public'
+  const previous = row.visibility || 'private'
   row.updating = true
   try {
     const res: any = activeKind.value === 'books'
