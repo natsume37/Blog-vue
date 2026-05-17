@@ -708,9 +708,9 @@ onMounted(() => {
 
 .time-chart__item {
   display: grid;
-  grid-template-rows: 2.1rem minmax(14rem, 1fr) 1.5rem;
+  grid-template-rows: 2.1rem 16rem 1.5rem;
   gap: 0.45rem;
-  align-items: end;
+  align-items: stretch;
   min-width: 2.5rem;
   text-align: center;
 }
@@ -722,6 +722,7 @@ onMounted(() => {
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+  align-self: end;
 }
 
 .time-chart__bar {
@@ -750,6 +751,7 @@ onMounted(() => {
   color: var(--muted);
   font-size: 0.74rem;
   font-weight: 800;
+  align-self: center;
 }
 
 .longest-list,
@@ -973,10 +975,23 @@ onMounted(() => {
 
   .time-chart {
     grid-template-columns: repeat(18, minmax(2.3rem, 1fr));
+    min-height: 15rem;
+  }
+
+  .time-chart__item {
+    grid-template-rows: 12rem 1.5rem;
   }
 
   .time-chart__value {
     display: none;
+  }
+
+  .time-chart__bar {
+    grid-row: 1;
+  }
+
+  .time-chart__item small {
+    grid-row: 2;
   }
 }
 </style>
