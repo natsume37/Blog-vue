@@ -25,10 +25,15 @@ import {
   getBookRecords,
   getBookRecordStats,
   getBookReadingTimeStats,
+  getBookRecommendations,
+  getBookSourceDetail,
+  getBookSourceNotes,
   getMovieRecords,
   getMovieRecordStats,
   getWeReadSyncStatus,
+  searchBookStore,
   syncWeReadRecords,
+  updateBookRecordVisibility,
 } from '../api'
 import { useUserStore } from '../stores/user'
 
@@ -36,6 +41,7 @@ type RecordKind = 'books' | 'movies'
 
 type RecordItem = {
   id?: number
+  sourceId?: string
   title: string
   creator: string
   status: string
@@ -118,6 +124,91 @@ type MovieStats = {
   total_duration: string
 }
 
+type BookSearchResult = {
+  source_id: string
+  title: string
+  author?: string
+  cover?: string
+  intro?: string
+  category?: string
+  publisher?: string
+  rating?: number
+  rating_count?: number
+  reading_count?: number
+  from_cache?: boolean
+}
+
+type BookChapter = {
+  chapter_uid: string
+  chapter_idx: number
+  title: string
+  level: number
+  word_count: number
+  deep_link?: string
+}
+
+type BookSourceDetail = BookSearchResult & {
+  source_id: string
+  translator?: string
+  publish_time?: string
+  isbn?: string
+  word_count?: number
+  progress: number
+  read_duration: string
+  status: string
+  note_count: number
+  highlight_count: number
+  review_count: number
+  bookmark_count: number
+  tags: string[]
+  chapters: BookChapter[]
+  local_record_id?: number | null
+  visibility?: string
+}
+
+type BookNoteItem = {
+  source_id: string
+  note_type: 'highlight' | 'review' | string
+  chapter_uid?: string
+  chapter_title?: string
+  content: string
+  abstract?: string
+  location_range?: string
+  deep_link?: string
+  source_created_at?: string | null
+}
+
+type BookNotes = {
+  source_id: string
+  title: string
+  total: number
+  highlight_count: number
+  review_count: number
+  from_cache?: boolean
+  chapters: Array<{
+    chapter_uid: string
+    chapter_title: string
+    items: BookNoteItem[]
+  }>
+}
+
+type BookRecommendation = {
+  source_id: string
+  title: string
+  author?: string
+  cover?: string
+  category?: string
+  rating?: number
+  progress: number
+  read_duration: string
+  reason: string
+  tags: string[]
+  local_record_id?: number | null
+}
+
+type BookFeatureKey = 'shelf' | 'search' | 'stats' | 'detail' | 'notes' | 'recommend'
+type DetailMode = 'overview' | 'chapters' | 'notes'
+
 const props = defineProps<{
   kind: RecordKind
 }>()
@@ -138,6 +229,19 @@ const movieApiRecords = ref<RecordItem[]>([])
 const syncLoading = ref(false)
 const syncStatus = ref<SyncStatus | null>(null)
 const activeTimeRange = ref<'week' | 'month' | 'all'>('month')
+const activeBookFeature = ref<BookFeatureKey>('shelf')
+const detailMode = ref<DetailMode>('overview')
+const bookSearchKeyword = ref('')
+const bookSearchResults = ref<BookSearchResult[]>([])
+const bookSearchLoading = ref(false)
+const sourceDetail = ref<BookSourceDetail | null>(null)
+const sourceDetailLoading = ref(false)
+const sourceNotes = ref<BookNotes | null>(null)
+const sourceNotesLoading = ref(false)
+const recommendations = ref<BookRecommendation[]>([])
+const recommendationsLoading = ref(false)
+const bookFeatureMessage = ref('')
+const visibilitySaving = ref(false)
 
 const bookRecords: RecordItem[] = [
   {
@@ -313,6 +417,7 @@ const visibilityLabel = (value?: string) => {
 
 const transformBookRecord = (item: any): RecordItem => ({
   id: Number(item.id),
+  sourceId: String(item.source_id || ''),
   title: String(item.title || '未命名书籍'),
   creator: String(item.author || '未知作者'),
   status: String(item.status || '待读'),
@@ -333,6 +438,7 @@ const transformBookRecord = (item: any): RecordItem => ({
 
 const transformMovieRecord = (item: any): RecordItem => ({
   id: Number(item.id),
+  sourceId: String(item.source_id || ''),
   title: String(item.title || '未命名影片'),
   creator: String(item.director || '未知导演'),
   status: String(item.status || '想看'),
@@ -573,6 +679,187 @@ const routeLinks = [
   { label: '电影', to: '/records/movies', icon: Film },
 ]
 
+const bookFeatureCards = [
+  { key: 'shelf' as const, title: '查阅书架', desc: '浏览个人书架和同步记录', icon: Reading },
+  { key: 'search' as const, title: '书籍搜索', desc: '在微信读书书城检索图书', icon: Search },
+  { key: 'stats' as const, title: '阅读统计', desc: '查看时长、天数和偏好', icon: DataAnalysis },
+  { key: 'detail' as const, title: '书籍详情', desc: '目录、进度和书籍档案', icon: Notebook },
+  { key: 'notes' as const, title: '笔记和划线', desc: '同步划线和个人想法', icon: EditPen },
+  { key: 'recommend' as const, title: '推荐好书', desc: '基于本地阅读偏好推荐', icon: StarFilled },
+]
+
+const selectedBookSourceId = computed(() => selectedRecord.value.sourceId || '')
+
+const activeSourceId = computed(() => sourceDetail.value?.source_id || selectedBookSourceId.value)
+
+const sourceDetailTitle = computed(() => sourceDetail.value?.title || selectedRecord.value.title)
+
+const detailModeOptions = [
+  { value: 'overview' as const, label: '档案' },
+  { value: 'chapters' as const, label: '目录' },
+  { value: 'notes' as const, label: '笔记划线' },
+]
+
+const visibilityOptions = [
+  { value: 'public', label: '公开' },
+  { value: 'login', label: '登录可见' },
+  { value: 'private', label: '私密' },
+]
+
+const formatCount = (value?: number) => {
+  const count = Number(value || 0)
+  if (count >= 10000) return `${(count / 10000).toFixed(1)}万`
+  return String(count)
+}
+
+const handleSelectRecord = (index: number) => {
+  selectedIndex.value = index
+  const sourceId = filteredRecords.value[index]?.sourceId
+  if (!sourceId || props.kind !== 'books') return
+  if (activeBookFeature.value === 'detail') {
+    loadBookSourceDetail(sourceId)
+  }
+  if (activeBookFeature.value === 'notes' || detailMode.value === 'notes') {
+    loadBookSourceNotes(sourceId)
+  }
+}
+
+const loadBookSourceDetail = async (sourceId = activeSourceId.value) => {
+  if (!sourceId || props.kind !== 'books') return
+  sourceDetailLoading.value = true
+  bookFeatureMessage.value = ''
+  try {
+    const res: any = await getBookSourceDetail(sourceId, true)
+    if (res?.code === 200 && res.data) {
+      sourceDetail.value = res.data
+      bookFeatureMessage.value = res.msg && res.msg !== 'success' ? res.msg : ''
+    }
+  } catch (_error) {
+    bookFeatureMessage.value = '书籍详情暂时无法读取'
+  } finally {
+    sourceDetailLoading.value = false
+  }
+}
+
+const loadBookSourceNotes = async (sourceId = activeSourceId.value) => {
+  if (!sourceId || props.kind !== 'books' || !userStore.isAdmin) return
+  sourceNotesLoading.value = true
+  bookFeatureMessage.value = ''
+  try {
+    const res: any = await getBookSourceNotes(sourceId, true)
+    if (res?.code === 200 && res.data) {
+      sourceNotes.value = res.data
+      bookFeatureMessage.value = res.msg && res.msg !== 'success' ? res.msg : ''
+    }
+  } catch (_error) {
+    bookFeatureMessage.value = '笔记和划线暂时无法读取'
+  } finally {
+    sourceNotesLoading.value = false
+  }
+}
+
+const loadBookRecommendations = async () => {
+  if (props.kind !== 'books') return
+  recommendationsLoading.value = true
+  try {
+    const res: any = await getBookRecommendations({ limit: 8 }, true)
+    if (res?.code === 200 && Array.isArray(res.data)) {
+      recommendations.value = res.data
+    }
+  } catch (_error) {
+    recommendations.value = []
+  } finally {
+    recommendationsLoading.value = false
+  }
+}
+
+const handleBookSearch = async () => {
+  if (props.kind !== 'books') return
+  const keyword = bookSearchKeyword.value.trim()
+  if (!keyword) {
+    ElMessage.warning('请输入书名或作者')
+    return
+  }
+  bookSearchLoading.value = true
+  bookFeatureMessage.value = ''
+  try {
+    const res: any = await searchBookStore({ keyword, count: 12, scope: 10 }, true)
+    if (res?.code === 200 && Array.isArray(res.data)) {
+      bookSearchResults.value = res.data
+      bookFeatureMessage.value = res.msg && res.msg !== 'success' ? res.msg : ''
+    }
+  } catch (_error) {
+    bookFeatureMessage.value = '书城搜索暂时无法读取'
+    bookSearchResults.value = []
+  } finally {
+    bookSearchLoading.value = false
+  }
+}
+
+const openSourceDetail = async (sourceId: string) => {
+  activeBookFeature.value = 'detail'
+  detailMode.value = 'overview'
+  await loadBookSourceDetail(sourceId)
+}
+
+const openSourceNotes = async (sourceId = activeSourceId.value) => {
+  activeBookFeature.value = 'notes'
+  detailMode.value = 'notes'
+  await loadBookSourceNotes(sourceId)
+}
+
+const setDetailMode = async (mode: DetailMode) => {
+  detailMode.value = mode
+  if (mode === 'notes') {
+    await loadBookSourceNotes()
+  }
+}
+
+const handleBookFeature = async (feature: BookFeatureKey) => {
+  activeBookFeature.value = feature
+  bookFeatureMessage.value = ''
+  if (feature === 'search' && !bookSearchKeyword.value) {
+    bookSearchKeyword.value = selectedRecord.value.title === '暂无记录' ? '' : selectedRecord.value.title
+  }
+  if (feature === 'detail') {
+    detailMode.value = 'overview'
+    await loadBookSourceDetail()
+  }
+  if (feature === 'notes') {
+    await openSourceNotes()
+  }
+  if (feature === 'recommend' && !recommendations.value.length) {
+    await loadBookRecommendations()
+  }
+}
+
+const handleBookVisibilityChange = async (visibility: string) => {
+  const recordId = selectedRecord.value.id
+  if (props.kind !== 'books' || !userStore.isAdmin || !recordId || visibility === selectedRecord.value.visibility) return
+  visibilitySaving.value = true
+  try {
+    const res: any = await updateBookRecordVisibility(recordId, visibility)
+    if (res?.code === 200 && res.data) {
+      const updatedRecord = transformBookRecord(res.data)
+      const recordIndex = bookApiRecords.value.findIndex((item) => item.id === updatedRecord.id)
+      if (recordIndex >= 0) {
+        bookApiRecords.value.splice(recordIndex, 1, updatedRecord)
+      }
+      const currentDetail = sourceDetail.value
+      if (currentDetail && currentDetail.local_record_id === updatedRecord.id) {
+        sourceDetail.value = { ...currentDetail, visibility: updatedRecord.visibility }
+      }
+      ElMessage.success('可见性已更新')
+    } else {
+      ElMessage.error(res?.msg || '可见性更新失败')
+    }
+  } catch (_error) {
+    ElMessage.error('可见性更新失败')
+  } finally {
+    visibilitySaving.value = false
+  }
+}
+
 const loadBookRecords = async () => {
   if (props.kind !== 'books') return
   bookLoading.value = true
@@ -674,6 +961,11 @@ watch(() => props.kind, () => {
   activeStatus.value = '全部'
   selectedIndex.value = 0
   searchKeyword.value = ''
+  activeBookFeature.value = 'shelf'
+  detailMode.value = 'overview'
+  sourceDetail.value = null
+  sourceNotes.value = null
+  bookFeatureMessage.value = ''
   loadRecords()
 })
 
@@ -747,6 +1039,23 @@ watch([activeStatus, searchKeyword], () => {
           </div>
         </header>
 
+        <section v-if="props.kind === 'books'" class="book-feature-grid" aria-label="读书功能">
+          <button
+            v-for="feature in bookFeatureCards"
+            :key="feature.key"
+            type="button"
+            class="book-feature-card"
+            :class="{ 'book-feature-card--active': activeBookFeature === feature.key }"
+            @click="handleBookFeature(feature.key)"
+          >
+            <span>
+              <el-icon><component :is="feature.icon" /></el-icon>
+            </span>
+            <strong>{{ feature.title }}</strong>
+            <small>{{ feature.desc }}</small>
+          </button>
+        </section>
+
         <section class="record-stats" aria-label="统计">
           <div v-for="stat in config.stats" :key="stat.label" class="record-stat">
             <el-icon><component :is="stat.icon" /></el-icon>
@@ -755,7 +1064,7 @@ watch([activeStatus, searchKeyword], () => {
           </div>
         </section>
 
-        <section v-if="props.kind === 'books'" class="book-time-dashboard" aria-label="阅读时长统计">
+        <section v-if="props.kind === 'books' && (activeBookFeature === 'shelf' || activeBookFeature === 'stats')" class="book-time-dashboard" aria-label="阅读时长统计">
           <div class="time-dashboard-head">
             <div>
               <span class="record-eyebrow">
@@ -869,6 +1178,201 @@ watch([activeStatus, searchKeyword], () => {
           </div>
         </section>
 
+        <section
+          v-if="props.kind === 'books' && activeBookFeature !== 'shelf' && activeBookFeature !== 'stats'"
+          class="book-system-panel"
+          :class="`book-system-panel--${activeBookFeature}`"
+          aria-label="读书系统工作台"
+        >
+          <p v-if="bookFeatureMessage" class="book-system-message">{{ bookFeatureMessage }}</p>
+
+          <div v-if="activeBookFeature === 'search'" class="book-search-workspace">
+            <form class="book-search-form" @submit.prevent="handleBookSearch">
+              <label class="record-search">
+                <el-icon><Search /></el-icon>
+                <input v-model="bookSearchKeyword" type="search" placeholder="搜索书名 / 作者 / ISBN">
+              </label>
+              <button class="record-add" type="submit" :disabled="bookSearchLoading">
+                <el-icon><Search /></el-icon>
+                <span>{{ bookSearchLoading ? '搜索中' : '搜索' }}</span>
+              </button>
+            </form>
+            <div v-if="bookSearchLoading" class="book-feature-empty">正在检索微信读书书城...</div>
+            <div v-else-if="bookSearchResults.length" class="book-search-results">
+              <button
+                v-for="book in bookSearchResults"
+                :key="book.source_id"
+                type="button"
+                class="book-search-result"
+                @click="openSourceDetail(book.source_id)"
+              >
+                <img v-if="book.cover" :src="book.cover" :alt="book.title" loading="lazy">
+                <span v-else class="mini-cover" :style="{ '--cover': '#2f6c8f', '--cover-accent': '#c76d3d' }"></span>
+                <span>
+                  <strong>{{ book.title }}</strong>
+                  <small>{{ book.author || '未知作者' }} · {{ book.category || '未分类' }}</small>
+                  <em>{{ book.rating || '未评' }} 分 · {{ formatCount(book.reading_count) }} 人在读</em>
+                </span>
+              </button>
+            </div>
+            <div v-else class="book-feature-empty">暂无搜索结果</div>
+          </div>
+
+          <div v-else-if="activeBookFeature === 'detail'" class="book-detail-workspace">
+            <div v-if="sourceDetailLoading" class="book-feature-empty">正在读取书籍详情...</div>
+            <template v-else>
+              <div class="book-detail-hero">
+                <img v-if="sourceDetail?.cover || selectedRecord.cover" :src="sourceDetail?.cover || selectedRecord.cover" :alt="sourceDetailTitle" loading="lazy">
+                <span v-else class="mini-cover" :style="{ '--cover': selectedRecord.color, '--cover-accent': selectedRecord.accent }"></span>
+                <div>
+                  <span class="record-eyebrow">
+                    <el-icon><Notebook /></el-icon>
+                    Book Detail
+                  </span>
+                  <h2>{{ sourceDetailTitle }}</h2>
+                  <p>{{ sourceDetail?.author || selectedRecord.creator }} · {{ sourceDetail?.publisher || sourceDetail?.category || selectedRecord.format }}</p>
+                  <div class="detail-tags">
+                    <span v-for="tag in (sourceDetail?.tags?.length ? sourceDetail.tags : selectedRecord.tags)" :key="tag">{{ tag }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-mode-tabs">
+                <button
+                  v-for="mode in detailModeOptions"
+                  :key="mode.value"
+                  type="button"
+                  :class="{ 'is-active': detailMode === mode.value }"
+                  @click="setDetailMode(mode.value)"
+                >
+                  {{ mode.label }}
+                </button>
+              </div>
+
+              <div v-if="detailMode === 'overview'" class="book-detail-body">
+                <p class="detail-note">{{ sourceDetail?.intro || selectedRecord.note || '暂无简介' }}</p>
+                <div class="detail-grid">
+                  <div>
+                    <el-icon><TrendCharts /></el-icon>
+                    <span>阅读进度</span>
+                    <strong>{{ sourceDetail?.progress ?? selectedRecord.progress }}%</strong>
+                  </div>
+                  <div>
+                    <el-icon><Clock /></el-icon>
+                    <span>累计阅读</span>
+                    <strong>{{ sourceDetail?.read_duration || selectedRecord.duration }}</strong>
+                  </div>
+                  <div>
+                    <el-icon><StarFilled /></el-icon>
+                    <span>微信读书评分</span>
+                    <strong>{{ sourceDetail?.rating || selectedRecord.rating || '未评' }}</strong>
+                  </div>
+                  <div>
+                    <el-icon><CollectionTag /></el-icon>
+                    <span>笔记划线</span>
+                    <strong>{{ sourceDetail?.note_count ?? 0 }} 条</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else-if="detailMode === 'chapters'" class="chapter-list">
+                <a
+                  v-for="chapter in sourceDetail?.chapters || []"
+                  :key="chapter.chapter_uid || chapter.chapter_idx"
+                  :href="chapter.deep_link || undefined"
+                  class="chapter-row"
+                  :style="{ paddingLeft: `${Math.min(3, Math.max(1, chapter.level || 1)) * 0.75}rem` }"
+                >
+                  <span>{{ chapter.chapter_idx || '-' }}</span>
+                  <strong>{{ chapter.title || '未命名章节' }}</strong>
+                  <small>{{ formatCount(chapter.word_count) }} 字</small>
+                </a>
+                <div v-if="!(sourceDetail?.chapters || []).length" class="book-feature-empty">暂无章节目录</div>
+              </div>
+
+              <div v-else class="book-notes-workspace">
+                <div v-if="!userStore.isAdmin" class="book-feature-empty">个人笔记和划线仅管理员可见</div>
+                <div v-else-if="sourceNotesLoading" class="book-feature-empty">正在读取笔记和划线...</div>
+                <div v-else-if="sourceNotes?.total" class="note-chapter-list">
+                  <article v-for="chapter in sourceNotes.chapters" :key="chapter.chapter_uid || chapter.chapter_title" class="note-chapter">
+                    <h3>{{ chapter.chapter_title || '未分章节' }}</h3>
+                    <div v-for="note in chapter.items" :key="note.source_id" class="note-item" :class="`note-item--${note.note_type}`">
+                      <span>{{ note.note_type === 'highlight' ? '划线' : '想法' }}</span>
+                      <p>{{ note.content }}</p>
+                      <a v-if="note.deep_link" :href="note.deep_link">打开位置</a>
+                    </div>
+                  </article>
+                </div>
+                <div v-else class="book-feature-empty">暂无可展示笔记和划线</div>
+              </div>
+            </template>
+          </div>
+
+          <div v-else-if="activeBookFeature === 'notes'" class="book-notes-workspace">
+            <div class="book-panel-head">
+              <div>
+                <span class="record-eyebrow">
+                  <el-icon><EditPen /></el-icon>
+                  Notes
+                </span>
+                <h2>{{ sourceNotes?.title || sourceDetailTitle }}</h2>
+              </div>
+              <button v-if="userStore.isAdmin" class="record-sync" type="button" :disabled="sourceNotesLoading" @click="loadBookSourceNotes()">
+                <el-icon><Timer /></el-icon>
+                <span>{{ sourceNotesLoading ? '同步中' : '刷新笔记' }}</span>
+              </button>
+            </div>
+            <div v-if="!userStore.isAdmin" class="book-feature-empty">个人笔记和划线仅管理员可见</div>
+            <div v-else-if="sourceNotesLoading" class="book-feature-empty">正在读取笔记和划线...</div>
+            <div v-else-if="sourceNotes?.total" class="note-chapter-list">
+              <article v-for="chapter in sourceNotes.chapters" :key="chapter.chapter_uid || chapter.chapter_title" class="note-chapter">
+                <h3>{{ chapter.chapter_title || '未分章节' }}</h3>
+                <div v-for="note in chapter.items" :key="note.source_id" class="note-item" :class="`note-item--${note.note_type}`">
+                  <span>{{ note.note_type === 'highlight' ? '划线' : '想法' }}</span>
+                  <p>{{ note.content }}</p>
+                  <a v-if="note.deep_link" :href="note.deep_link">打开位置</a>
+                </div>
+              </article>
+            </div>
+            <div v-else class="book-feature-empty">暂无可展示笔记和划线</div>
+          </div>
+
+          <div v-else-if="activeBookFeature === 'recommend'" class="recommendation-workspace">
+            <div class="book-panel-head">
+              <div>
+                <span class="record-eyebrow">
+                  <el-icon><StarFilled /></el-icon>
+                  Recommendations
+                </span>
+                <h2>推荐好书</h2>
+              </div>
+              <button class="record-sync" type="button" :disabled="recommendationsLoading" @click="loadBookRecommendations">
+                <el-icon><Timer /></el-icon>
+                <span>{{ recommendationsLoading ? '生成中' : '重新推荐' }}</span>
+              </button>
+            </div>
+            <div v-if="recommendationsLoading" class="book-feature-empty">正在基于本地阅读偏好生成推荐...</div>
+            <div v-else-if="recommendations.length" class="recommendation-list">
+              <button
+                v-for="book in recommendations"
+                :key="book.source_id"
+                type="button"
+                class="recommendation-row"
+                @click="openSourceDetail(book.source_id)"
+              >
+                <img v-if="book.cover" :src="book.cover" :alt="book.title" loading="lazy">
+                <span v-else class="mini-cover" :style="{ '--cover': '#4b6f44', '--cover-accent': '#c76d3d' }"></span>
+                <span>
+                  <strong>{{ book.title }}</strong>
+                  <small>{{ book.author || '未知作者' }} · {{ book.read_duration }}</small>
+                  <em>{{ book.reason }}</em>
+                </span>
+              </button>
+            </div>
+            <div v-else class="book-feature-empty">暂无足够本地记录生成推荐</div>
+          </div>
+        </section>
+
         <section class="record-content">
           <div class="record-panel record-list-panel">
             <div class="panel-toolbar">
@@ -899,9 +1403,10 @@ watch([activeStatus, searchKeyword], () => {
                 type="button"
                 class="record-row"
                 :class="{ 'record-row--active': selectedIndex === index }"
-                @click="selectedIndex = index"
+                @click="handleSelectRecord(index)"
               >
-                <span class="cover-art" :style="{ '--cover': item.color, '--cover-accent': item.accent }">
+                <img v-if="item.cover" class="cover-art cover-art--image" :src="item.cover" :alt="item.title" loading="lazy">
+                <span v-else class="cover-art" :style="{ '--cover': item.color, '--cover-accent': item.accent }">
                   <span></span>
                 </span>
                 <span class="record-row__body">
@@ -924,6 +1429,7 @@ watch([activeStatus, searchKeyword], () => {
 
           <article v-if="filteredRecords.length" class="record-panel detail-panel">
             <div class="detail-cover" :style="{ '--cover': selectedRecord.color, '--cover-accent': selectedRecord.accent }">
+              <img v-if="selectedRecord.cover" :src="selectedRecord.cover" :alt="selectedRecord.title" loading="lazy">
               <span class="detail-cover__spine"></span>
               <span class="detail-cover__title">{{ selectedRecord.title }}</span>
             </div>
@@ -961,6 +1467,22 @@ watch([activeStatus, searchKeyword], () => {
                   <el-icon><Calendar /></el-icon>
                   <span>最近更新</span>
                   <strong>{{ selectedRecord.date }}</strong>
+                </div>
+              </div>
+
+              <div v-if="props.kind === 'books' && userStore.isAdmin && selectedRecord.id" class="visibility-control">
+                <span>可见性</span>
+                <div>
+                  <button
+                    v-for="option in visibilityOptions"
+                    :key="option.value"
+                    type="button"
+                    :class="{ 'is-active': selectedRecord.visibility === option.value }"
+                    :disabled="visibilitySaving"
+                    @click="handleBookVisibilityChange(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1003,15 +1525,15 @@ watch([activeStatus, searchKeyword], () => {
             </section>
 
             <section v-if="userStore.isAdmin" class="insight-block compact-actions">
-              <button type="button">
+              <button type="button" @click="openSourceNotes()">
                 <el-icon><EditPen /></el-icon>
                 <span>写笔记</span>
               </button>
-              <button type="button">
+              <button type="button" @click="handleBookFeature('stats')">
                 <el-icon><Timer /></el-icon>
                 <span>记录时长</span>
               </button>
-              <button type="button">
+              <button type="button" @click="openSourceDetail(activeSourceId)">
                 <el-icon><View /></el-icon>
                 <span>查看回顾</span>
               </button>
@@ -1274,6 +1796,66 @@ watch([activeStatus, searchKeyword], () => {
   color: var(--muted);
   font-size: 0.78rem;
   text-align: right;
+}
+
+.book-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.book-feature-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.22rem 0.65rem;
+  align-items: center;
+  min-height: 5.2rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.85rem;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.book-feature-card:hover,
+.book-feature-card--active {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  transform: translateY(-1px);
+}
+
+.book-feature-card > span {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 8px;
+  color: var(--surface);
+  background: linear-gradient(135deg, var(--accent), var(--warm));
+}
+
+.book-feature-card strong,
+.book-feature-card small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-feature-card strong {
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.book-feature-card small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 750;
 }
 
 .record-stats {
@@ -1674,6 +2256,265 @@ watch([activeStatus, searchKeyword], () => {
   color: var(--muted);
 }
 
+.book-system-panel {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-strong) 94%, transparent), color-mix(in srgb, var(--surface) 82%, transparent)),
+    var(--surface-strong);
+  box-shadow: 0 18px 45px rgba(26, 42, 38, 0.1);
+}
+
+.book-system-message {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--warm) 38%, transparent);
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem;
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--warm) 9%, transparent);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.book-search-form,
+.book-panel-head,
+.book-detail-hero,
+.book-search-result,
+.recommendation-row {
+  display: flex;
+  align-items: center;
+}
+
+.book-search-form {
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.book-search-results,
+.recommendation-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.book-search-result,
+.recommendation-row {
+  gap: 0.8rem;
+  min-width: 0;
+  min-height: 7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: inherit;
+  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-search-result:hover,
+.recommendation-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.book-search-result img,
+.book-search-result .mini-cover,
+.recommendation-row img,
+.recommendation-row .mini-cover,
+.book-detail-hero img,
+.book-detail-hero .mini-cover {
+  flex: 0 0 auto;
+  width: 4.2rem;
+  aspect-ratio: 0.72;
+  border-radius: 7px;
+  object-fit: cover;
+  box-shadow: 0 12px 24px rgba(23, 33, 31, 0.14);
+}
+
+.book-search-result > span:last-child,
+.recommendation-row > span:last-child {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.book-search-result strong,
+.recommendation-row strong,
+.chapter-row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-search-result small,
+.book-search-result em,
+.recommendation-row small,
+.recommendation-row em {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-detail-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.book-detail-hero {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.book-detail-hero h2,
+.book-panel-head h2 {
+  margin: 0.35rem 0 0.25rem;
+  font-size: clamp(1.55rem, 3vw, 2.25rem);
+  line-height: 1.08;
+}
+
+.book-detail-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.detail-mode-tabs {
+  display: flex;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.25rem;
+  overflow-x: auto;
+}
+
+.detail-mode-tabs button {
+  flex: 0 0 auto;
+  height: 2.15rem;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 0.85rem;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.detail-mode-tabs button.is-active {
+  color: var(--surface);
+  background: var(--accent);
+}
+
+.book-detail-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.chapter-list,
+.note-chapter-list {
+  display: grid;
+  gap: 0.65rem;
+  max-height: 28rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.chapter-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  min-height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  color: inherit;
+  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  text-decoration: none;
+}
+
+.chapter-row span,
+.chapter-row small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.book-panel-head {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.note-chapter {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.9rem;
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+}
+
+.note-chapter h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.note-item {
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid var(--line);
+  padding: 0.75rem 0 0;
+  margin-top: 0.75rem;
+}
+
+.note-item:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.note-item span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.note-item p {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.75;
+}
+
+.note-item a {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.book-feature-empty {
+  display: grid;
+  place-items: center;
+  min-height: 10rem;
+  border: 1px dashed color-mix(in srgb, var(--muted) 34%, transparent);
+  border-radius: 8px;
+  padding: 1.25rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.7;
+}
+
 .record-content {
   display: grid;
   grid-template-columns: minmax(21rem, 0.9fr) minmax(28rem, 1.35fr) minmax(17rem, 0.65fr);
@@ -1807,6 +2648,11 @@ watch([activeStatus, searchKeyword], () => {
   box-shadow: 0 12px 22px rgba(0,0,0,0.18);
 }
 
+.cover-art--image {
+  object-fit: cover;
+  background: none;
+}
+
 .cover-art span {
   position: absolute;
   right: 0.48rem;
@@ -1873,10 +2719,14 @@ watch([activeStatus, searchKeyword], () => {
 
 .detail-panel {
   display: grid;
-  grid-template-columns: minmax(12rem, 0.72fr) minmax(0, 1fr);
+  grid-template-columns: minmax(10.5rem, 0.56fr) minmax(0, 1fr);
+  gap: clamp(1rem, 2vw, 1.35rem);
   align-self: start;
-  min-height: clamp(34rem, 66vh, 42rem);
-  background: var(--surface-strong);
+  min-height: clamp(27rem, 55vh, 35rem);
+  padding: clamp(0.85rem, 1.6vw, 1.1rem);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-strong) 94%, transparent), color-mix(in srgb, var(--surface) 82%, transparent)),
+    var(--surface-strong);
 }
 
 .detail-panel--empty {
@@ -1888,7 +2738,11 @@ watch([activeStatus, searchKeyword], () => {
   position: relative;
   display: flex;
   align-items: flex-end;
-  min-height: 100%;
+  align-self: stretch;
+  min-height: 0;
+  max-height: 32rem;
+  aspect-ratio: 0.68;
+  border-radius: 8px;
   padding: 1.25rem;
   overflow: hidden;
   color: #fff;
@@ -1898,10 +2752,26 @@ watch([activeStatus, searchKeyword], () => {
     linear-gradient(135deg, var(--cover), var(--cover-accent));
 }
 
+.detail-cover > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-cover > img + .detail-cover__spine {
+  background: rgba(0,0,0,0.32);
+}
+
+.detail-cover > img ~ .detail-cover__title {
+  text-shadow: 0 2px 16px rgba(0,0,0,0.46);
+}
+
 .detail-cover::after {
   content: "";
   position: absolute;
-  inset: 1.25rem;
+  inset: 1rem;
   border: 1px solid rgba(255,255,255,0.34);
   border-radius: 8px;
 }
@@ -1916,18 +2786,22 @@ watch([activeStatus, searchKeyword], () => {
 .detail-cover__title {
   position: relative;
   z-index: 1;
-  max-width: 12rem;
+  display: -webkit-box;
+  max-width: 10.5rem;
+  overflow: hidden;
   font-family: var(--font-display);
-  font-size: clamp(1.7rem, 3vw, 2.8rem);
-  line-height: 1.06;
+  font-size: clamp(1.35rem, 2.15vw, 2.15rem);
+  line-height: 1.12;
   letter-spacing: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
 }
 
 .detail-copy {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(0.75rem, 1.6vw, 1.25rem) clamp(0.6rem, 1.4vw, 1rem);
 }
 
 .detail-topline {
@@ -1939,15 +2813,20 @@ watch([activeStatus, searchKeyword], () => {
 }
 
 .detail-copy h2 {
-  margin: 1.2rem 0 0.3rem;
+  display: -webkit-box;
+  margin: clamp(0.8rem, 1.8vw, 1.05rem) 0 0.45rem;
+  max-width: 100%;
+  overflow: hidden;
   overflow-wrap: anywhere;
-  font-size: clamp(1.9rem, 3.4vw, 3.05rem);
-  line-height: 1;
+  font-size: clamp(1.65rem, 2.45vw, 2.45rem);
+  line-height: 1.12;
   letter-spacing: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .detail-creator {
-  margin: 0 0 1.35rem;
+  margin: 0 0 clamp(0.85rem, 1.6vw, 1.15rem);
   color: var(--accent-strong);
   font-weight: 800;
 }
@@ -1955,14 +2834,14 @@ watch([activeStatus, searchKeyword], () => {
 .detail-note {
   margin: 0;
   color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.75;
+  font-size: 0.96rem;
+  line-height: 1.7;
 }
 
 .detail-tags {
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 1.4rem 0;
+  margin: clamp(0.95rem, 1.8vw, 1.2rem) 0;
 }
 
 .detail-tags span,
@@ -1987,10 +2866,11 @@ watch([activeStatus, searchKeyword], () => {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.2rem 0.55rem;
-  min-height: 5rem;
-  padding: 0.9rem;
+  min-height: 4.6rem;
+  padding: 0.78rem;
   border: 1px solid var(--line);
   border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 58%, transparent);
 }
 
 .detail-grid .el-icon {
@@ -2008,7 +2888,59 @@ watch([activeStatus, searchKeyword], () => {
 .detail-grid strong {
   align-self: end;
   min-width: 0;
-  font-size: 1.05rem;
+  overflow: hidden;
+  font-size: clamp(0.95rem, 1.35vw, 1.08rem);
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visibility-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+}
+
+.visibility-control > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.visibility-control div {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.visibility-control button {
+  min-height: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 0.65rem;
+  color: var(--ink);
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.visibility-control button.is-active {
+  border-color: color-mix(in srgb, var(--accent) 52%, transparent);
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.visibility-control button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .record-insights {
@@ -2091,6 +3023,10 @@ watch([activeStatus, searchKeyword], () => {
 }
 
 @media (max-width: 1180px) {
+  .book-feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .record-content {
     grid-template-columns: minmax(20rem, 0.95fr) minmax(28rem, 1.35fr);
   }
@@ -2157,6 +3093,8 @@ watch([activeStatus, searchKeyword], () => {
   .record-header,
   .record-content,
   .book-time-dashboard,
+  .book-search-results,
+  .recommendation-list,
   .time-dashboard-head,
   .time-dashboard-grid,
   .detail-panel {
@@ -2207,8 +3145,15 @@ watch([activeStatus, searchKeyword], () => {
 }
 
 @media (max-width: 620px) {
+  .book-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
   .record-actions,
-  .panel-toolbar {
+  .panel-toolbar,
+  .book-search-form,
+  .book-panel-head,
+  .book-detail-hero {
     align-items: stretch;
     flex-direction: column;
   }
@@ -2225,6 +3170,19 @@ watch([activeStatus, searchKeyword], () => {
   .record-sync {
     justify-content: center;
     width: 100%;
+  }
+
+  .book-search-result,
+  .recommendation-row {
+    align-items: flex-start;
+  }
+
+  .chapter-row {
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+  }
+
+  .chapter-row small {
+    grid-column: 2;
   }
 
   .record-sync-meta {
