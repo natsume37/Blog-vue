@@ -22,7 +22,7 @@ on:
           - "true"
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "24"
   DEPLOY_SSH_CONNECT_TIMEOUT: "30"
 
 jobs:
