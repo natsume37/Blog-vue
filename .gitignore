@@ -8,8 +8,12 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.codegraph/
 dist
 dist-ssr
+.nuxt
+.output
+.data
 *.local
 
 # Editor directories and files
@@ -28,8 +32,7 @@ dist-ssr
 !.env.example
 !.env.production.example
 
-# 包管理器锁文件（强烈建议不提交）
-package-lock.json
+# 本项目使用 npm，package-lock.json 必须提交以保证 CI 与生产环境可复现。
 yarn.lock
 pnpm-lock.yaml
 

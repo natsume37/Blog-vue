@@ -4,11 +4,21 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "lint": "eslint app nuxt.config.ts",
+    "test": "vitest run",
+    "postinstall": "nuxt prepare",
+    "dev:legacy": "vite --config vite.legacy.config.ts",
+    "build:legacy": "vue-tsc -b && vite build --config vite.legacy.config.ts",
+    "preview:legacy": "vite preview --config vite.legacy.config.ts"
   },
   "dependencies": {
+    "@iconify-json/lucide": "^1.2.121",
+    "@nuxt/ui": "^4.10.0",
     "@element-plus/icons-vue": "^2.3.2",
     "@types/dompurify": "^3.2.0",
     "axios": "^1.13.2",
@@ -16,6 +26,7 @@
     "echarts": "^6.0.0",
     "element-plus": "^2.11.8",
     "marked": "^17.0.1",
+    "nuxt": "^4.5.1",
     "pinia": "^3.0.4",
     "qiniu-js": "^3.4.3",
     "typeit": "^8.8.7",
@@ -24,16 +35,19 @@
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
+    "@nuxt/eslint": "^1.16.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
     "autoprefixer": "^10.4.22",
+    "eslint": "^10.8.0",
     "postcss": "^8.5.6",
     "sass": "^1.94.2",
     "tailwindcss": "^4.1.17",
     "typescript": "~5.9.3",
-    "vite": "^6.0.1",
+    "vite": "^7.2.2",
+    "vitest": "^4.1.10",
     "vue-tsc": "^3.1.4"
   }
 }

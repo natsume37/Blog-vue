@@ -52,14 +52,15 @@ jobs:
             echo "VITE_API_BASE_URL secret is empty, using repository .env.production."
           fi
 
-      - name: Type Check + Build
-        run: npm run build
+      - name: Type Check + Static Generate
+        # 当前主站由 Nginx 提供静态文件；Nuxt 生成产物放在 .output/public。
+        run: npm run generate
 
-      - name: Upload Dist Artifact
+      - name: Upload Nuxt Static Artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: dist
+          path: .output/public
           if-no-files-found: error
 
       - name: Decide Deploy
