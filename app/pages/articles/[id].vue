@@ -3,24 +3,28 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 
 import { formatPublicDate } from '~/features/public-content/presentation'
+import { serializeJsonLd } from '~/utils/public-seo'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'public' })
 
 const route = useRoute()
 const config = useRuntimeConfig()
 const { getArticle } = usePublicContentApi()
 const articleId = computed(() => Number(route.params.id))
 
-const { data: article, refresh, status } = useAsyncData(
+const { data: article, error, refresh, status } = useAsyncData(
   'public-article-detail',
-  () => getArticle(articleId.value),
+  () => getArticle(articleId.value, { trackView: import.meta.client }),
   {
-    // 静态发布时仍由浏览器读取实时公开文章。
-    server: false,
+    // 构建时不计入阅读数；客户端挂载后再完成真实访问统计。
     watch: [articleId],
     default: () => null,
   },
 )
+
+onMounted(() => {
+  refresh()
+})
 
 const renderedContent = computed(() => {
   if (!article.value?.content) return ''
@@ -28,11 +32,43 @@ const renderedContent = computed(() => {
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
 })
 
-useSeoMeta({
-  title: () => article.value?.title
-    ? `${article.value.title} · ${config.public.siteName}`
-    : `文章 · ${config.public.siteName}`,
-  description: () => article.value?.summary || '只读公开文章。',
+const articleTitle = computed(() => article.value?.seo_title || article.value?.title || `文章 · ${config.public.siteName}`)
+const articleDescription = computed(() => article.value?.seo_description || article.value?.summary || '只读公开文章。')
+const articleKeywords = computed(() => article.value?.seo_keywords || article.value?.tags.map(tag => tag.name).join(', '))
+const { canonicalUrl, siteUrl } = usePublicSeo({
+  title: computed(() => article.value?.title ? `${articleTitle.value} · ${config.public.siteName}` : articleTitle.value),
+  description: articleDescription,
+  keywords: articleKeywords,
+  path: computed(() => `/articles/${articleId.value}`),
+  type: 'article',
+  // 无法公开读取的文章不应被搜索引擎收录。
+  indexable: computed(() => !error.value && Boolean(article.value)),
+})
+
+useHead(() => {
+  if (!article.value) return {}
+
+  return {
+    script: [{
+      key: 'structured-data-article',
+      type: 'application/ld+json',
+      innerHTML: serializeJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        'headline': article.value.title,
+        'description': articleDescription.value,
+        'datePublished': article.value.createdAt || article.value.createTime,
+        'mainEntityOfPage': canonicalUrl.value,
+        'inLanguage': 'zh-CN',
+        'keywords': articleKeywords.value,
+        'author': {
+          '@type': 'Person',
+          'name': config.public.siteAuthor,
+          'url': siteUrl,
+        },
+      }),
+    }],
+  }
 })
 </script>
 
@@ -45,6 +81,7 @@ useSeoMeta({
       >{{ config.public.siteName }}</NuxtLink>
       <nav aria-label="公开档案导航">
         <NuxtLink to="/articles">文章</NuxtLink>
+        <ArchiveThemeSelector />
         <NuxtLink
           to="/login"
           aria-label="站长登录"
@@ -69,7 +106,7 @@ useSeoMeta({
       >← 文章</NuxtLink>
 
       <header>
-        <p>{{ article.categoryName || '随笔' }} · {{ formatPublicDate(article.createTime) }}</p>
+        <p>{{ article.categoryName || '随笔' }} · {{ formatPublicDate(article.createTime) }} · {{ config.public.siteAuthor }}</p>
         <h1>{{ article.title }}</h1>
         <ul
           v-if="article.tags.length"

@@ -37,6 +37,75 @@
   text-rendering: optimizeLegibility;
 }
 
+/* 公开档案的主题仅在 public layout 内生效，避免访客偏好影响私人工作台。 */
+:root {
+  --archive-canvas: #f6f6f3;
+  --archive-surface: #ffffff;
+  --archive-surface-soft: #f1f2ee;
+  --archive-surface-strong: #e9ebe6;
+  --archive-ink: #1b1c1a;
+  --archive-ink-soft: #4d514c;
+  --archive-ink-body: #30332f;
+  --archive-muted: #7c817a;
+  --archive-line: #e2e4de;
+  --archive-line-strong: #d4d7cf;
+  --archive-accent: #5d7468;
+  --archive-accent-dark: #43594d;
+  --archive-selection: #cdd8d0;
+  --archive-shadow: 0 1px 2px rgb(20 26 22 / 4%), 0 14px 34px rgb(20 26 22 / 5%);
+}
+
+:root[data-archive-theme='mist'] {
+  --archive-canvas: #f3f6f7;
+  --archive-surface: #fbfcfc;
+  --archive-surface-soft: #eef3f5;
+  --archive-surface-strong: #e4ebee;
+  --archive-ink: #1a252d;
+  --archive-ink-soft: #4b5961;
+  --archive-ink-body: #2e3a42;
+  --archive-muted: #75828a;
+  --archive-line: #dbe3e6;
+  --archive-line-strong: #cad5da;
+  --archive-accent: #466d7e;
+  --archive-accent-dark: #345769;
+  --archive-selection: #cfe0e6;
+  --archive-shadow: 0 1px 2px rgb(19 38 48 / 4%), 0 14px 34px rgb(19 38 48 / 5%);
+}
+
+:root[data-archive-theme='warm'] {
+  --archive-canvas: #f7f1e8;
+  --archive-surface: #fffdf9;
+  --archive-surface-soft: #f2eae0;
+  --archive-surface-strong: #ebe0d2;
+  --archive-ink: #2f2923;
+  --archive-ink-soft: #5b5146;
+  --archive-ink-body: #3e362d;
+  --archive-muted: #85796b;
+  --archive-line: #e4dacd;
+  --archive-line-strong: #d8cabb;
+  --archive-accent: #826849;
+  --archive-accent-dark: #674f35;
+  --archive-selection: #ebd9bf;
+  --archive-shadow: 0 1px 2px rgb(54 42 28 / 4%), 0 14px 34px rgb(54 42 28 / 5%);
+}
+
+:root[data-archive-theme='night'] {
+  --archive-canvas: #151817;
+  --archive-surface: #1c201e;
+  --archive-surface-soft: #222825;
+  --archive-surface-strong: #2c3430;
+  --archive-ink: #e8ede9;
+  --archive-ink-soft: #c3cdc5;
+  --archive-ink-body: #d5ddd6;
+  --archive-muted: #97a49b;
+  --archive-line: #303a35;
+  --archive-line-strong: #414d46;
+  --archive-accent: #91b09b;
+  --archive-accent-dark: #b3cfbb;
+  --archive-selection: #385044;
+  --archive-shadow: 0 1px 2px rgb(0 0 0 / 20%), 0 14px 34px rgb(0 0 0 / 24%);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -2999,6 +3068,26 @@ kbd {
 }
 
 /* 极简公开档案：内容优先，避免营销式大标题、卡片与装饰性模块。 */
+.public-layout {
+  min-height: 100dvh;
+  background: var(--archive-canvas);
+  color: var(--archive-ink);
+  color-scheme: light;
+}
+
+:root[data-archive-theme='night'] .public-layout {
+  color-scheme: dark;
+}
+
+.public-layout ::selection {
+  background: var(--archive-selection);
+  color: var(--archive-ink);
+}
+
+.public-layout :focus-visible {
+  outline-color: var(--archive-accent);
+}
+
 .archive-page,
 .reader-page {
   width: min(100% - 48px, 840px);
@@ -3016,11 +3105,11 @@ kbd {
   align-items: center;
   justify-content: space-between;
   min-height: 42px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--archive-line);
 }
 
 .archive-brand {
-  color: var(--ink);
+  color: var(--archive-ink);
   font-size: 14px;
   font-weight: 680;
   letter-spacing: -0.025em;
@@ -3030,7 +3119,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 18px;
-  color: var(--ink-soft);
+  color: var(--archive-ink-soft);
   font-size: 12px;
 }
 
@@ -3039,12 +3128,78 @@ kbd {
 }
 
 .archive-header nav a:hover {
-  color: var(--ink);
+  color: var(--archive-ink);
 }
 
 .archive-header nav .iconify {
   display: block;
   font-size: 14px;
+}
+
+.archive-theme-selector {
+  position: relative;
+}
+
+.archive-theme-selector summary {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.archive-theme-selector summary::-webkit-details-marker {
+  display: none;
+}
+
+.archive-theme-selector__current {
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--archive-line-strong);
+  border-radius: 999px;
+  background: var(--archive-accent);
+  box-shadow: inset 0 0 0 2px var(--archive-canvas);
+}
+
+.archive-theme-selector__menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 10px);
+  right: -6px;
+  display: grid;
+  width: 94px;
+  padding: 4px;
+  border: 1px solid var(--archive-line);
+  background: var(--archive-surface);
+  box-shadow: var(--archive-shadow);
+}
+
+.archive-theme-selector__option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 7px;
+  background: transparent;
+  color: var(--archive-ink-soft);
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+}
+
+.archive-theme-selector__option:hover,
+.archive-theme-selector__option.is-active {
+  background: var(--archive-surface-soft);
+  color: var(--archive-ink);
+}
+
+.archive-theme-selector__swatch {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border: 1px solid var(--archive-line-strong);
+  border-radius: 999px;
 }
 
 .archive-section {
@@ -3070,7 +3225,7 @@ kbd {
 
 .archive-heading p {
   margin: 0 0 7px;
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 10px;
   font-weight: 680;
   letter-spacing: 0.08em;
@@ -3087,12 +3242,12 @@ kbd {
 
 .archive-heading > span,
 .archive-heading > a {
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 11px;
 }
 
 .archive-heading > a:hover {
-  color: var(--ink);
+  color: var(--archive-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -3100,7 +3255,7 @@ kbd {
 .archive-list {
   padding: 0;
   margin: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--archive-line);
   list-style: none;
 }
 
@@ -3111,18 +3266,18 @@ kbd {
   align-items: center;
   gap: 18px;
   min-height: 54px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--archive-line);
 }
 
 .archive-row time {
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
 .archive-row strong {
   overflow: hidden;
-  color: var(--ink);
+  color: var(--archive-ink);
   font-size: 14px;
   font-weight: 530;
   letter-spacing: -0.02em;
@@ -3131,7 +3286,7 @@ kbd {
 }
 
 .archive-row > span {
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 11px;
   white-space: nowrap;
 }
@@ -3144,14 +3299,14 @@ kbd {
 .archive-row--link:hover {
   padding-right: 9px;
   padding-left: 9px;
-  background: var(--surface-soft);
+  background: var(--archive-surface-soft);
 }
 
 .archive-empty {
   display: flex;
   justify-content: space-between;
   min-height: 52px;
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 12px;
 }
 
@@ -3159,9 +3314,9 @@ kbd {
 .reader-empty button,
 .archive-pagination button {
   padding: 0;
-  border-bottom: 1px solid var(--ink-soft);
+  border-bottom: 1px solid var(--archive-ink-soft);
   background: transparent;
-  color: var(--ink-soft);
+  color: var(--archive-ink-soft);
   cursor: pointer;
   font-size: 11px;
 }
@@ -3169,7 +3324,7 @@ kbd {
 .archive-empty button:hover,
 .reader-empty button:hover,
 .archive-pagination button:hover:not(:disabled) {
-  color: var(--ink);
+  color: var(--archive-ink);
 }
 
 .archive-pagination {
@@ -3178,7 +3333,7 @@ kbd {
   justify-content: center;
   gap: 18px;
   margin-top: 30px;
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 11px;
 }
 
@@ -3190,8 +3345,8 @@ kbd {
 .archive-footer {
   margin-top: 78px;
   padding-top: 16px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
+  border-top: 1px solid var(--archive-line);
+  color: var(--archive-muted);
   font-size: 10px;
 }
 
@@ -3202,25 +3357,25 @@ kbd {
 .reader-back {
   display: inline-block;
   margin-bottom: 40px;
-  color: var(--ink-soft);
+  color: var(--archive-ink-soft);
   font-size: 12px;
 }
 
 .reader-back:hover {
-  color: var(--ink);
+  color: var(--archive-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .reader-content > header > p {
   margin: 0;
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 11px;
 }
 
 .reader-content h1 {
   margin: 13px 0 0;
-  color: var(--ink);
+  color: var(--archive-ink);
   font-size: clamp(33px, 5.2vw, 50px);
   font-weight: 620;
   letter-spacing: -0.06em;
@@ -3233,14 +3388,14 @@ kbd {
   gap: 0;
   padding: 0;
   margin: 18px 0 0;
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 10px;
   list-style: none;
 }
 
 .reader-content header li + li::before {
   margin: 0 7px;
-  color: var(--line-strong);
+  color: var(--archive-line-strong);
   content: '·';
 }
 
@@ -3255,14 +3410,14 @@ kbd {
 
 .reader-summary {
   margin: 32px 0 0;
-  color: var(--ink-soft);
+  color: var(--archive-ink-soft);
   font-size: 15px;
   line-height: 1.85;
 }
 
 .reader-prose {
   margin-top: 36px;
-  color: #30332f;
+  color: var(--archive-ink-body);
   font-size: 16px;
   line-height: 1.95;
 }
@@ -3276,7 +3431,7 @@ kbd {
 .reader-prose h3,
 .reader-prose h4 {
   margin: 1.85em 0 0.65em;
-  color: var(--ink);
+  color: var(--archive-ink);
   font-weight: 650;
   letter-spacing: -0.035em;
   line-height: 1.25;
@@ -3312,29 +3467,29 @@ kbd {
 }
 
 .reader-prose a {
-  color: var(--accent-dark);
+  color: var(--archive-accent-dark);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .reader-prose blockquote {
   padding-left: 17px;
-  border-left: 1px solid var(--line-strong);
-  color: var(--ink-soft);
+  border-left: 1px solid var(--archive-line-strong);
+  color: var(--archive-ink-soft);
 }
 
 .reader-prose pre {
   padding: 15px;
   overflow: auto;
-  background: var(--surface-soft);
-  color: var(--ink-soft);
+  background: var(--archive-surface-soft);
+  color: var(--archive-ink-soft);
   font-size: 0.84em;
   line-height: 1.65;
 }
 
 .reader-prose code {
   padding: 0.1em 0.28em;
-  background: var(--surface-strong);
+  background: var(--archive-surface-strong);
   font-size: 0.86em;
 }
 
@@ -3360,7 +3515,7 @@ kbd {
 .reader-prose th,
 .reader-prose td {
   padding: 8px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--archive-line);
   text-align: left;
 }
 
@@ -3370,7 +3525,7 @@ kbd {
   place-items: center;
   align-content: center;
   gap: 12px;
-  color: var(--muted);
+  color: var(--archive-muted);
   font-size: 13px;
   text-align: center;
 }

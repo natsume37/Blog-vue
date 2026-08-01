@@ -2,7 +2,7 @@
 import { formatPublicDate } from '~/features/public-content/presentation'
 import type { PublicArticlePage } from '~/features/public-content/types'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'public' })
 
 const config = useRuntimeConfig()
 const { listArticles } = usePublicContentApi()
@@ -22,8 +22,7 @@ const { data: articlePage, refresh, status } = useAsyncData<PublicArticlePage>(
   'public-articles-list',
   () => listArticles({ current: currentPage.value, size: pageSize }),
   {
-    // 静态发布时仍由浏览器读取实时公开文章。
-    server: false,
+    // 文章归档需预渲染，便于搜索引擎发现每篇文章的链接。
     watch: [currentPage],
     default: emptyArticlePage,
   },
@@ -34,13 +33,18 @@ const total = computed(() => articlePage.value?.total ?? 0)
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
 const isLoading = computed(() => status.value === 'pending' || status.value === 'idle')
 
+onMounted(() => {
+  refresh()
+})
+
 function changePage(nextPage: number): void {
   currentPage.value = Math.min(pageCount.value, Math.max(1, nextPage))
 }
 
-useSeoMeta({
+usePublicSeo({
   title: `文章 · ${config.public.siteName}`,
   description: '只读公开文章归档。',
+  path: '/articles',
 })
 </script>
 
@@ -53,6 +57,7 @@ useSeoMeta({
       >{{ config.public.siteName }}</NuxtLink>
       <nav aria-label="公开档案导航">
         <NuxtLink to="/">记录</NuxtLink>
+        <ArchiveThemeSelector />
         <NuxtLink
           to="/login"
           aria-label="站长登录"

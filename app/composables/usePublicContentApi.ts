@@ -51,19 +51,25 @@ export function usePublicContentApi() {
       query: {
         current: normalizePositiveInteger(options.current ?? 1, 1),
         size: normalizePageSize(options.size ?? 12, 12),
+        // 公开档案不展示需要答案验证的文章，避免把不可读内容交给搜索引擎。
+        include_protected: false,
       },
       ...publicRequestOptions,
     })
     return responseData(response, '公开文章暂时无法读取')
   }
 
-  async function getArticle(articleId: number): Promise<PublicArticleDetail> {
+  async function getArticle(
+    articleId: number,
+    options: { trackView?: boolean } = {},
+  ): Promise<PublicArticleDetail> {
     if (!Number.isInteger(articleId) || articleId < 1) {
       throw new Error('文章地址无效')
     }
 
     const response = await $fetch<ApiResponse<PublicArticleDetail>>(`/articles/${articleId}`, {
       baseURL: config.public.apiV1Base,
+      query: { track_view: options.trackView ?? true },
       ...publicRequestOptions,
     })
     return responseData(response, '文章暂时无法读取')

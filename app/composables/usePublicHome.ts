@@ -11,7 +11,7 @@ function emptyPublicHomeContent(): PublicHomeContent {
 export function usePublicHome() {
   const { listArticles, listTimeline } = usePublicContentApi()
 
-  return useAsyncData<PublicHomeContent>(
+  const homeContent = useAsyncData<PublicHomeContent>(
     'public-home-content',
     async () => {
       const [timelineResult, articlesResult] = await Promise.allSettled([
@@ -26,9 +26,15 @@ export function usePublicHome() {
       }
     },
     {
-      // 主站是静态发布；在访客浏览器请求公开 API，避免构建产物把内容冻结。
-      server: false,
+      // 预渲染把公开内容写入 HTML，供搜索引擎和分享卡片直接读取。
       default: emptyPublicHomeContent,
     },
   )
+
+  onMounted(() => {
+    // 静态版本仍在浏览器刷新一次，保持日常记录的即时性。
+    homeContent.refresh()
+  })
+
+  return homeContent
 }

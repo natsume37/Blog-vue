@@ -64,6 +64,7 @@
   - `tagId`: 标签 ID (可选)
   - `keyword`: 搜索关键词 (可选)
   - `sort`: 排序方式 (`new` | `hot` | `recommend`)
+  - `include_protected`: 是否包含需要答案验证的文章（默认 `true`）。公开归档和站点地图应传 `false`，仅收录可直接阅读的内容。
 - **Response**:
   ```json
   {
@@ -93,6 +94,9 @@
 
 - **URL**: `/articles/{id}`
 - **Method**: `GET`
+- **Params**:
+  - `answer`: 受保护文章的验证答案（可选）
+  - `track_view`: 是否计入阅读量（默认 `true`）。静态预渲染必须传 `false`，避免构建过程虚增阅读数。
 
 ## 4. 分类与标签 (Categories & Tags)
 

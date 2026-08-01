@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { formatPublicDate, publicRecordMeta } from '~/features/public-content/presentation'
 import type { TimelineRecord } from '~/features/records/types'
+import { serializeJsonLd } from '~/utils/public-seo'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'public' })
 
 const config = useRuntimeConfig()
 const { data: homeContent, refresh, status } = usePublicHome()
@@ -16,10 +17,32 @@ function recordKind(record: TimelineRecord): string {
   return publicRecordMeta[record.kind].label
 }
 
-useSeoMeta({
+const description = '一个按时间整理的只读个人公开档案。'
+const { canonicalUrl, siteUrl } = usePublicSeo({
   title: `${config.public.siteName} · 公开档案`,
-  description: '一个按时间整理的只读个人公开档案。',
+  description,
+  path: '/',
 })
+
+useHead(() => ({
+  script: [{
+    key: 'structured-data-website',
+    type: 'application/ld+json',
+    innerHTML: serializeJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      'name': config.public.siteName,
+      'url': canonicalUrl.value,
+      'description': description,
+      'inLanguage': 'zh-CN',
+      'publisher': {
+        '@type': 'Person',
+        'name': config.public.siteAuthor,
+        'url': siteUrl,
+      },
+    }),
+  }],
+}))
 </script>
 
 <template>
@@ -31,6 +54,7 @@ useSeoMeta({
       >{{ config.public.siteName }}</NuxtLink>
       <nav aria-label="公开档案导航">
         <NuxtLink to="/articles">文章</NuxtLink>
+        <ArchiveThemeSelector />
         <NuxtLink
           to="/login"
           aria-label="站长登录"

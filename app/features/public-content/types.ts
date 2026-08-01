@@ -22,6 +22,9 @@ export interface PublicArticleDetail extends PublicArticleSummary {
   slug?: string | null
   content: string
   createdAt?: string | null
+  seo_title?: string | null
+  seo_description?: string | null
+  seo_keywords?: string | null
   tags: PublicArticleTag[]
 }
 
